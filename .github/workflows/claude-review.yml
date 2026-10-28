@@ -65,7 +65,7 @@ jobs:
             Post exactly one review or close comment. Do nothing else.
 
   welcome:
-    if: github.event_name == 'issues'
+    if: github.event_name == 'issues' && github.event.issue.user.login != github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
