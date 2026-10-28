@@ -2,13 +2,30 @@
 
 A 3D startup tycoon where you build **your own** company idea, test it against realistic rules and find out whether it would survive in the real world.
 
-▶ **Play:** open `index.html` in a modern browser. No install, no build step.
+▶ **[Play in your browser](https://tobeficv.github.io/founders-way/)**. No install, no account. It updates automatically with every merged change.
 
 ## Help shape the game
 
 - 💡 **Suggest a feature:** open a [Feature request](../../issues/new?template=feature_request.yml). Vote on other ideas with 👍. The most-voted ideas go into the roadmap.
 - 🐞 **Report a bug:** open a [Bug report](../../issues/new?template=bug_report.yml).
 - 🛠 **Contribute code:** read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+## 🏆 Hall of Fame
+
+Everyone whose contribution is merged is listed here **and in the game's credits** (Settings → Credits).
+Players whose idea gets built get a credit line too ("Idea by …").
+
+| Who | What |
+|---|---|
+| *Your name here* | Send your first PR or idea! |
+
+### How rewards work
+- **Merged pull request** → your name in the in-game credits and in this Hall of Fame.
+- **Your idea built** → credited inside the game, next to the feature.
+- **Weekly challenge winner** → pinned on the Discussions board with your result.
+- **Big contributors** → a written LinkedIn recommendation from the maintainer, describing what you built.
+
+Every pull request gets an automatic review with feedback within minutes. The maintainer has the final word.
 
 ## License
 
