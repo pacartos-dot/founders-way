@@ -1,0 +1,27 @@
+name: 💡 Feature request
+description: Suggest an idea. Others can vote on it with 👍.
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: Search existing ideas first. If yours exists, vote with 👍 instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem or wish do you have?
+      placeholder: "When I hire people I can't tell who is burning out..."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Simulation / realism, Office & building, Characters, UI, Tutorial / Doc, Multiplayer / ranking, Translations, Other]
+    validations:
+      required: true

@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Founder Tycoon</title>
+<style>
+  :root{--bg:#161821;--panel:#20232f;--line:#2f3445;--text:#e9e7f2;--muted:#8d92a8;--accent:#7c9cff;--good:#3fbf8a;--bad:#e8705f;--card:#262a38;--field:#2a2e3d}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;display:flex;height:100vh;overflow:hidden}
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;position:relative}
+  canvas{border-radius:8px;box-shadow:0 12px 50px #000a;cursor:pointer}
+  #hint{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px}
+  #toasts{position:absolute;top:14px;left:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:340px}
+  .toast{background:#262a38ee;border:1px solid var(--line);border-left:4px solid var(--accent);padding:7px 11px;border-radius:8px;font-size:13px;animation:tin .25s ease-out;transition:opacity .5s}
+  .toast.good{border-left-color:var(--good)}.toast.bad{border-left-color:var(--bad)}
+  @keyframes tin{from{transform:translateX(-20px);opacity:0}}
+  #side{width:360px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column}
+  header{padding:12px 14px 8px;display:flex;align-items:center;gap:8px}
+  header h1{font-size:15px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{font-variant-numeric:tabular-nums;font-weight:600;background:var(--field);padding:3px 8px;border-radius:6px;font-size:12.5px}
+  .diff{font-size:11px;padding:2px 7px;border-radius:9px;font-weight:700;color:#111;white-space:nowrap}
+  .d-casual{background:#8de0b0}.d-student{background:#9db4ff}.d-challenger{background:#ffc27e}.d-founder{background:#ff9a8a}.d-custom{background:#d3b4ff}
+  .top{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;padding:0 14px 10px}
+  .top div{background:var(--card);border-radius:8px;padding:6px 9px;font-size:11px;color:var(--muted)}
+  .top b{display:block;color:var(--text);font-size:15px;font-variant-numeric:tabular-nums}
+  .controls{display:flex;gap:4px;padding:0 14px 10px}
+  .controls button{flex:1;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 0;cursor:pointer;font-size:13px}
+  .controls button.on{background:var(--accent);color:#111;border-color:var(--accent);font-weight:600}
+  .tabs{display:flex;gap:4px;padding:0 10px 8px;border-bottom:1px solid var(--line)}
+  .tabs button{flex:1;white-space:nowrap;background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:6px 0;cursor:pointer;font-size:12px}
+  .tabs button.on{background:var(--field);color:var(--text)}
+  .tabs button:last-child{flex:0 0 34px}
+  #panel{flex:1;overflow-y:auto;padding:4px 14px 16px;font-size:12.5px;line-height:1.45}
+  #panel h3{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 0 6px}
+  .kv{display:flex;justify-content:space-between;gap:8px;margin:2px 0}.kv span:first-child{color:var(--muted)}
+  .kv b{font-variant-numeric:tabular-nums;text-align:right}
+  .bar{height:7px;background:var(--field);border-radius:4px;overflow:hidden;margin:3px 0 8px}.bar i{display:block;height:100%;transition:width .4s}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .grid2>div{background:var(--card);border-radius:8px;padding:6px 9px;color:var(--muted);font-size:11px}.grid2 b{display:block;color:var(--text);font-size:14px}
+  .btn{background:var(--accent);color:#111;border:0;border-radius:6px;padding:6px 10px;font-weight:600;cursor:pointer;font-size:12.5px}
+  .btn.sec{background:var(--field);color:var(--text);border:1px solid var(--line)}
+  .btn.red{background:#3a2a2c;color:#ffb3a6}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .row{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;background:var(--card);margin-bottom:5px;cursor:pointer;border:1px solid transparent}
+  .row.sel{border-color:var(--accent)}
+  .dot{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px}
+  .row .grow{flex:1;min-width:0}.row small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini{display:flex;gap:4px;margin-top:3px}.mini .bar{flex:1;margin:0;height:5px}
+  .cand{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:8px;padding:7px 8px;margin-bottom:5px}
+  .stars{color:#f2c94c;letter-spacing:-1px;font-size:11px}
+  .item{display:flex;align-items:center;gap:9px;background:var(--card);border-radius:8px;padding:7px 9px;margin-bottom:5px}
+  .item .ic{font-size:20px}.item small{display:block;color:var(--muted);font-size:11px}
+  .selcard{background:#232a40;border:1px solid #3b4a7a;border-radius:10px;padding:10px;margin:8px 0}
+  .selcard .acts{display:flex;gap:6px;margin-top:8px}
+  input[type=range]{width:100%}
+  select,input[type=text],input[type=number],textarea{background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:13px;width:100%}
+  textarea{resize:vertical;min-height:54px}
+  .log p{margin:0 0 5px}.log .t{color:#5d6278;font-size:10.5px;margin-right:4px}
+  .note{color:var(--muted);font-size:11.5px}
+  .pitch{background:var(--card);border-radius:10px;padding:10px 12px;margin:8px 0}
+  .pitch h4{margin:0 0 2px;font-size:16px}.pitch .tag{color:var(--accent);font-size:11.5px}
+  .pitch p{margin:6px 0}.pitch .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-top:8px}
+  #modal,#home{position:fixed;inset:0;background:#0b0c12cc;display:flex;align-items:center;justify-content:center;z-index:10}
+  #modal[hidden],#home[hidden]{display:none}
+  #modal{z-index:11}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;width:min(460px,92vw);max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px #000c}
+  .box h2{margin:0 0 8px;font-size:19px}.box p{color:#cfd2e2;font-size:14px;line-height:1.5}
+  .mbtns{display:flex;flex-direction:column;gap:7px;margin-top:14px}.mbtns .btn{padding:9px;font-size:13.5px}
+  #home .box{width:min(720px,95vw)}
+  .logo{font-size:30px;font-weight:800;letter-spacing:.5px;margin:0}.logo span{color:var(--accent)}
+  .sub{color:var(--muted);margin:2px 0 16px}
+  .proj{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:10px;padding:9px 11px;margin-bottom:6px}
+  .proj .grow{flex:1;min-width:0}.proj small{color:var(--muted);display:block;font-size:11.5px}
+  .form label.f{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  .form h4{margin:18px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--accent)}
+  .presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+  .presets label{display:block;background:var(--card);border:2px solid transparent;border-radius:9px;padding:8px 10px;cursor:pointer;font-size:13px}
+  .presets input{display:none}.presets label:has(input:checked){border-color:var(--accent)}
+  .presets small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  details.adv{background:#1b1e29;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}
+  details.adv summary{cursor:pointer;font-weight:600;font-size:13px}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+  .sgrid .s{display:flex;flex-direction:column;gap:3px;padding:6px 0}
+  .sgrid .s>span{font-size:12px}.sgrid .s small{display:block;color:var(--muted);font-size:10.5px}
+  .sgrid .chk{flex-direction:row;align-items:center;gap:8px}
+  .sgrid h5{grid-column:1/-1;margin:10px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px}
+  .multbox{display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:8px;padding:8px 12px;margin-top:12px;font-size:13px}
+  .multbox b{font-size:18px;color:var(--accent)}
+  table.rank{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.rank td,table.rank th{padding:6px 5px;border-bottom:1px solid var(--line);text-align:left}
+  table.rank th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+  table.rank td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .hometabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .rfilter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}.rfilter .btn{padding:3px 9px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas><div id="toasts"></div><div id="hint">Click a team member for details · Space = pause</div></div>
+<aside id="side">
+  <header><h1 id="cname">—</h1><span id="diffTag" class="diff"></span><span class="pill" data-v="day"></span><span class="pill" data-v="clock"></span></header>
+  <div class="top">
+    <div>Cash<b data-v="cash"></b></div>
+    <div>MRR<b data-v="mrr"></b></div>
+    <div>Customers<b data-v="cust"></b></div>
+  </div>
+  <div class="controls">
+    <button id="pause">⏸</button>
+    <button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="4">4x</button>
+    <button id="menu" title="Main menu">☰ Menu</button>
+  </div>
+  <div class="tabs">
+    <button data-tab="company" class="on">📊 Company</button><button data-tab="team">👥 Team</button><button data-tab="office">🏗️ Office</button><button data-tab="pitch">💼 Pitch</button><button data-tab="log">📜</button>
+  </div>
+  <div id="panel"></div>
+</aside>
+<div id="modal" hidden><div class="box"><h2 id="mt"></h2><div id="mb"></div><div class="mbtns" id="mbtns"></div></div></div>
+<div id="home"><div class="box" id="homebox"></div></div>
+<script>
+// =====================================================================
+// GAME CONFIG
+// =====================================================================
+const GOAL = 10e6;                       // win: $10M valuation
+const STORE = 'founder-tycoon-projects';
+
+// Approximate cost profiles (all in USD). Not tax advice — game approximations.
+const COUNTRIES = {
+  global: { n: '🌍 Global average', sal: .35, vat: .15, pay: .15, inc: .22, rent: .5, loan: .12 },
+  us: { n: '🇺🇸 United States', sal: 1, vat: .07, pay: .2, inc: .21, rent: 1.2, loan: .09 },
+  uk: { n: '🇬🇧 United Kingdom', sal: .75, vat: .2, pay: .15, inc: .25, rent: 1.1, loan: .08 },
+  es: { n: '🇪🇸 Spain', sal: .45, vat: .21, pay: .3, inc: .25, rent: .6, loan: .07 },
+  mx: { n: '🇲🇽 Mexico', sal: .25, vat: .16, pay: .25, inc: .3, rent: .35, loan: .14 },
+  br: { n: '🇧🇷 Brazil', sal: .3, vat: .17, pay: .28, inc: .34, rent: .4, loan: .16 },
+  cl: { n: '🇨🇱 Chile', sal: .33, vat: .19, pay: .07, inc: .27, rent: .45, loan: .12 },
+  in: { n: '🇮🇳 India', sal: .15, vat: .18, pay: .13, inc: .25, rent: .25, loan: .11 },
+};
+
+// Player-type presets. Any change in Advanced settings turns the project into "custom".
+const PRESETS = {
+  casual:     { n: '🎮 Casual', desc: 'Just for fun. Generous market, no taxes, forgiving.', cfg: { country: 'global', cash: 60000, vat: false, payroll: false, incTax: false, cogs: true, lead: 1.5, conv: 1.25, churn: .7, market: 1.5, events: 'normal', bad: .3, grace: 5, loans: true, quitting: false, daySec: 45 } },
+  student:    { n: '📚 Student', desc: 'Learn how a business works. Balanced, no taxes.', cfg: { country: 'global', cash: 30000, vat: false, payroll: false, incTax: false, cogs: true, lead: 1, conv: 1, churn: 1, market: 1, events: 'normal', bad: .5, grace: 3, loans: true, quitting: true, daySec: 45 } },
+  challenger: { n: '🔥 Challenger', desc: 'Tight cash, tough market, taxes on.', cfg: { country: 'global', cash: 15000, vat: true, payroll: true, incTax: true, cogs: true, lead: .75, conv: .85, churn: 1.3, market: .8, events: 'high', bad: .65, grace: 3, loans: true, quitting: true, daySec: 45 } },
+  founder:    { n: '🚀 Founder', desc: 'Test a real idea: real-world costs and taxes for your country. Eligible for the investor portal.', cfg: { country: 'us', cash: 25000, vat: true, payroll: true, incTax: true, cogs: true, lead: .6, conv: .75, churn: 1.5, market: .6, events: 'normal', bad: .6, grace: 0, loans: true, quitting: true, daySec: 45 } },
+};
+const PRESET_LABEL = { ...Object.fromEntries(Object.entries(PRESETS).map(([k, p]) => [k, p.n])), custom: '⚙️ Custom' };
+
+// Every industry runs on the same engine with different parameters.
+const INDUSTRIES = {
+  saas: { n: 'Software / App (subscription)', ref: 30, leads: 1, cogs: .1, churn: .003, market: 2500, tickets: .08, rent: 1, unit: '/mo',
+    ver: v => v === 0 ? 'MVP v0.1' : `v${v}.0`, prod: 'release',
+    roles: { dev: 'Developer', design: 'UX Designer', sales: 'Sales', mkt: 'Marketing', support: 'Support' } },
+  ecommerce: { n: 'Online store', ref: 50, leads: .8, cogs: .55, churn: .009, market: 5000, tickets: .05, rent: 1, unit: '/mo per customer',
+    ver: v => v === 0 ? 'Launch catalog' : `Catalog ${v + 1}`, prod: 'catalog',
+    roles: { dev: 'Product', design: 'Designer', sales: 'Sales', mkt: 'Marketing', support: 'Fulfillment' } },
+  food: { n: 'Café / restaurant', ref: 45, leads: .9, cogs: .38, churn: .007, market: 1800, tickets: .04, rent: 1.6, unit: '/mo per regular',
+    ver: v => v === 0 ? 'Opening menu' : `Menu ${v + 1}`, prod: 'menu',
+    roles: { dev: 'Chef', design: 'Interior', sales: 'Front of house', mkt: 'Marketing', support: 'Service' } },
+  services: { n: 'Agency / B2B services', ref: 900, leads: .1, cogs: .25, churn: .0035, market: 160, tickets: .5, rent: 1, unit: '/mo per client',
+    ver: v => v === 0 ? 'First offer' : `Playbook ${v}`, prod: 'playbook',
+    roles: { dev: 'Consultant', design: 'Designer', sales: 'Business dev', mkt: 'Marketing', support: 'Account mgr' } },
+};
+
+const ROLES = {   // base = US monthly salary
+  dev:     { e: '💻', c: '#4f8ef7', base: 9000, verb: 'Building the product', bub: ['⌨️', '🐛', '✅', '🔧'] },
+  design:  { e: '🎨', c: '#e86a92', base: 7500, verb: 'Polishing the experience', bub: ['🎨', '✏️', '✨'] },
+  sales:   { e: '🤝', c: '#3fbf8a', base: 6500, verb: 'Talking to leads', bub: ['📞', '📧', '🤝'] },
+  mkt:     { e: '📣', c: '#f2a632', base: 7000, verb: 'Running campaigns', bub: ['📣', '📈', '📸'] },
+  support: { e: '🎧', c: '#a77bf0', base: 4500, verb: 'Helping customers', bub: ['🎧', '💬', '👍'] },
+};
+const roleName = r => INDUSTRIES[S.industry].roles[r];
+
+const LEVELS = [   // US rent per month (scaled by country)
+  { n: 'Garage', rent: 1200, cost: 0 },
+  { n: 'Office', rent: 6000, cost: 25000 },
+  { n: 'Corporate floor', rent: 24000, cost: 100000 },
+];
+
+const NAMES = ['Alex', 'Sam', 'Jordan', 'Maya', 'Leo', 'Priya', 'Noah', 'Sofia', 'Kenji', 'Ava', 'Mateo', 'Zoe', 'Omar', 'Lucia', 'Ethan', 'Chloe', 'Ravi', 'Emma', 'Diego', 'Nina', 'Liam', 'Aisha', 'Tom', 'Isla', 'Felix', 'Mia', 'Hugo', 'Yara'];
+const SKINS = ['#f1c7a5', '#d9a67e', '#a9744f', '#f6d3b8', '#8d5a3b'];
+const HAIRS = ['#3b2418', '#1c1c22', '#c0602a', '#5a3d26', '#d8b24a', '#77777f'];
+const STYLES = ['long', 'short', 'bun', 'curly'];
+
+// =====================================================================
+// MAP
+// =====================================================================
+const T = 24, COLS = 32, ROWS = 20, W = COLS * T, H = ROWS * T;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const ZONES = [{ x0: 1, x1: 10 }, { x0: 12, x1: 20 }, { x0: 22, x1: 30 }];
+const DOOR = [5, 18];
+const DESKS = [];
+[2, 13, 23].forEach((bx, z) => {
+  DESKS.push({ x: bx, y: 3, seat: [bx + 1, 5], face: 'up', z }, { x: bx + 4, y: 3, seat: [bx + 5, 5], face: 'up', z },
+    { x: bx, y: 12, seat: [bx + 1, 11], face: 'down', z }, { x: bx + 4, y: 12, seat: [bx + 5, 11], face: 'down', z });
+});
+const poi = (tile, face, rate, mor, emo, doing, sit) => ({ tile, face, rate, mor, emo, doing, sit, busy: null });
+const ITEMS = {
+  cooler:  { n: 'Water cooler', ic: '💧', cost: 0, z: 0, furn: [{ t: 'cooler', x: 1, y: 2, w: 1, h: 1 }], pois: [poi([1, 3], 'up', 45, 0, '💧', 'Getting water')] },
+  coffee:  { n: 'Coffee machine', ic: '☕', cost: 500, z: 0, mor: 3, desc: 'Much faster energy recovery.', furn: [{ t: 'coffee', x: 9, y: 2, w: 2, h: 1 }], pois: [poi([9, 3], 'up', 95, 2, '☕', 'Grabbing a coffee')] },
+  board:   { n: 'Whiteboard', ic: '📝', cost: 250, z: 0, desc: '+10% product and design progress.', furn: [], pois: [] },
+  sofa:    { n: 'Sofa', ic: '🛋️', cost: 1200, z: 1, mor: 4, desc: 'Comfy breaks: energy and morale.', furn: [{ t: 'couch', x: 14, y: 15, w: 4, h: 1 }], pois: [poi([15, 16], 'down', 110, 5, '😌', 'Resting', true), poi([16, 16], 'down', 110, 5, '📱', 'Resting', true)] },
+  snacks:  { n: 'Snack machine', ic: '🍫', cost: 1800, z: 1, mor: 4, desc: 'Energy plus a little happiness.', furn: [{ t: 'vending', x: 20, y: 14, w: 1, h: 2 }], pois: [poi([19, 15], 'right', 75, 4, '🍫', 'Having a snack')] },
+  ping:    { n: 'Ping-pong table', ic: '🏓', cost: 3000, z: 2, mor: 8, desc: 'Team morale skyrockets.', furn: [{ t: 'pingpong', x: 24, y: 15, w: 5, h: 2 }], pois: [poi([23, 15], 'right', 55, 12, '🏓', 'Playing ping-pong'), poi([29, 15], 'left', 55, 12, '🏓', 'Playing ping-pong')] },
+};
+const PLANT_SPOTS = [[1, 18], [10, 18], [12, 2], [20, 18], [22, 2], [30, 18]];
+const zoneOpen = z => z < S.level;
+
+const solid = [...Array(ROWS)].map(() => Array(COLS).fill(false));
+function rebuildSolid() {
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) solid[y][x] = y < 2 || y === ROWS - 1 || x === 0 || x === COLS - 1;
+  for (const wx of [11, 21]) for (let y = 2; y < ROWS - 1; y++) solid[y][wx] = !((y === 8 || y === 9) && zoneOpen(wx === 11 ? 1 : 2));
+  ZONES.forEach((z, i) => { if (!zoneOpen(i)) for (let y = 2; y < ROWS - 1; y++) for (let x = z.x0; x <= z.x1; x++) solid[y][x] = true; });
+  const blk = f => { for (let j = f.y; j < f.y + f.h; j++) for (let i = f.x; i < f.x + f.w; i++) solid[j][i] = true; };
+  DESKS.forEach(d => { if (zoneOpen(d.z)) blk({ x: d.x, y: d.y, w: 3, h: 2 }); });
+  activeFurn().forEach(blk);
+}
+function activeFurn() {
+  const out = [];
+  for (const [k, it] of Object.entries(ITEMS)) if (S.items[k] && zoneOpen(it.z)) out.push(...it.furn);
+  PLANT_SPOTS.slice(0, S.plants).forEach(([x, y]) => out.push({ t: 'plant', x, y, w: 1, h: 1 }));
+  return out;
+}
+const activePois = () => Object.entries(ITEMS).filter(([k, it]) => S.items[k] && zoneOpen(it.z)).flatMap(([, it]) => it.pois);
+
+// =====================================================================
+// UTILS
+// =====================================================================
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => {
+  const a = Math.abs(n), s = n < 0 ? '−$' : '$';
+  if (a >= 1e9) return s + (a / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6) return s + (a / 1e6).toFixed(2) + 'M';
+  if (a >= 1e4) return s + (a / 1e3).toFixed(1) + 'k';
+  return s + Math.round(a).toLocaleString('en-US');
+};
+const pct = v => Math.round(v * 100) + '%';
+const rint = x => Math.floor(x) + (Math.random() < x - Math.floor(x) ? 1 : 0);   // stochastic rounding
+
+// =====================================================================
+// STATE
+// =====================================================================
+let S = null, actors = [], selectedId = null, paused = false, speed = 1, tab = 'company', dirty = true;
+let floats = [], timers = [], modalQ = [], nightT = 0;
+const I = () => INDUSTRIES[S.industry], CFG = () => S.cfg, CTRY = () => COUNTRIES[S.cfg.country];
+const minPerSec = () => 540 / S.cfg.daySec;
+
+// Score multiplier derived from the settings, so custom games rank fairly.
+function multOf(c) {
+  const ct = COUNTRIES[c.country];
+  const m = Math.pow(30000 / c.cash, .3) * Math.pow(c.lead, -.7) * Math.pow(c.conv, -.9) * Math.pow(c.churn, .6) * Math.pow(c.market, -.3)
+    * (c.vat ? 1.12 : 1) * (c.payroll ? 1.08 : 1) * (c.incTax ? 1.06 : 1) * (c.cogs ? 1 : .85)
+    * (1 + (c.bad - .5) * .6) * (c.grace === 0 ? 1.1 : c.grace >= 5 ? .9 : 1) * (c.loans ? 1 : 1.05)
+    * ({ off: .8, low: .9, normal: 1, high: 1.08 }[c.events]) * Math.pow(ct.sal / .35, .25);
+  return Math.round(clamp(m, .25, 6) * 100) / 100;
+}
+function look() { return { skin: pick(SKINS), hair: pick(HAIRS), style: pick(STYLES) }; }
+
+function newProject(f, cfg, preset) {
+  S = {
+    id: 'p' + Date.now().toString(36), created: Date.now(), name: f.name, founder: f.founder || 'You', pitch: f.pitch, problem: f.problem,
+    customer: f.customer, industry: f.industry, preset, cfg, mult: multOf(cfg), realInterest: false,
+    day: 1, min: 9 * 60, cash: cfg.cash, price: Math.round(INDUSTRIES[f.industry].ref * .6), customers: 0, pipeline: 0, buzz: 6,
+    quality: 12, version: 0, devProg: 0, polish: 0, supportPts: 0, coverage: 1, sat: .6, equity: 100,
+    level: 1, items: { cooler: true }, plants: 0, staff: [], candidates: [], log: [], hist: [], milestones: {}, offers: {}, once: {},
+    nextEvent: 4, debtDays: 0, last: null, won: false, over: false, nextId: 1, totalRev: 0, raised: 0, best: 0,
+    loan: null, taxAcc: 0, taxPaid: 0,
+  };
+  S.staff.push({ id: 0, name: S.founder, founder: true, role: 'dev', skill: 3, salary: 0, energy: 100, morale: 85, desk: 0, ...look() });
+  refreshCandidates();
+  log(`🏁 <b>${esc(S.name)}</b> is born. It all starts in a garage.`);
+  startProject();
+}
+function allProjects() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+function save() {
+  if (!S) return;
+  try { const all = allProjects(); all[S.id] = S; localStorage.setItem(STORE, JSON.stringify(all)); localStorage.setItem(STORE + '-last', S.id); } catch { }
+}
+function loadProject(id) { const p = allProjects()[id]; if (p) { S = p; startProject(); } }
+function startProject() {
+  Object.values(ITEMS).forEach(it => it.pois.forEach(p => p.busy = null));
+  rebuildSolid();
+  actors = S.staff.map(e => new Actor(e, false));
+  selectedId = null; floats = []; timers = []; modalQ = []; paused = false;
+  document.getElementById('cname').textContent = S.name;
+  const dt = document.getElementById('diffTag'); dt.textContent = PRESET_LABEL[S.preset]; dt.className = 'diff d-' + S.preset;
+  document.getElementById('home').hidden = true;
+  setTab('company');
+}
+function log(html) { S.log.unshift({ d: S.day, t: hhmm(), html }); if (S.log.length > 150) S.log.length = 150; if (tab === 'log') dirty = true; }
+function toast(text, kind = '') {
+  const el = document.createElement('div'); el.className = 'toast ' + kind; el.innerHTML = text;
+  const box = document.getElementById('toasts'); box.appendChild(el);
+  while (box.children.length > 5) box.firstChild.remove();
+  setTimeout(() => el.style.opacity = 0, 4200); setTimeout(() => el.remove(), 4800);
+}
+const hhmm = () => { const m = Math.floor(S.min); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+
+// =====================================================================
+// ECONOMY
+// =====================================================================
+const employees = () => S.staff.filter(e => !e.founder);
+const verCost = () => 25 * Math.pow(1.55, S.version);
+const fairPrice = () => I().ref * (0.45 + S.quality / 100 * 1.1);
+function conv() {
+  const base = 0.08 + S.quality / 140, pf = Math.pow(clamp(fairPrice() / S.price, .05, 1.6), 1.6);
+  return clamp(base * pf * CFG().conv, .005, .92);
+}
+const marketSize = () => I().market * CFG().market * (0.4 + S.quality / 60);
+function leadsPerDay() {
+  const sat = Math.max(.05, 1 - S.customers / marketSize());
+  return (2 + S.buzz * .35 + S.customers * .01 * S.sat) * CFG().lead * I().leads * sat;
+}
+const mrr = () => S.customers * S.price;
+const netFactor = () => CFG().vat ? 1 / (1 + CTRY().vat) : 1;             // prices are tax-inclusive
+const payroll = () => S.staff.reduce((s, e) => s + e.salary, 0) * (CFG().payroll ? 1 + CTRY().pay : 1);
+const rentNow = () => LEVELS[S.level - 1].rent * CTRY().rent * I().rent;
+const valuation = () => Math.max(0, mrr() * netFactor() * 12 * (1 - (CFG().cogs ? I().cogs : 0)) * (2.5 + S.quality / 10)) + Math.max(0, S.cash) - (S.loan ? S.loan.bal : 0);
+const score = p => Math.round((p.best || 0) * (p.mult || 1) / 1000);
+const campaignCost = () => 600 * S.level;
+const maxDesks = () => S.level * 4;
+const moraleTarget = () => clamp(55 + S.plants * 3 + Object.entries(ITEMS).reduce((s, [k, it]) => s + (S.items[k] && zoneOpen(it.z) ? it.mor || 0 : 0), 0), 0, 95);
+const effOf = e => e.skill * (0.6 + e.morale / 250) * (e.energy < 15 ? .5 : 1);
+const loanMax = () => Math.round(Math.max(5000, mrr() * netFactor() * 3) / 1000) * 1000;
+
+function newCustomer(a) {
+  S.customers++;
+  if (a) { a.say('🤝 New customer!', 2); floatText(a, '+' + money(S.price) + '/mo', '#3fbf8a'); }
+  milestone();
+}
+function checkRelease(a) {
+  const c = verCost();
+  if (S.devProg < c) return;
+  const pr = Math.min(1, S.polish / c);
+  S.quality = Math.min(99, S.quality + (100 - S.quality) * (0.10 + 0.14 * pr));
+  S.devProg -= c; S.polish = 0; S.version++; S.buzz += 6;
+  const v = I().ver(S.version);
+  if (a) a.say('🚀 Shipped it!', 2.5);
+  toast(`🚀 Launched <b>${v}</b> · quality ${Math.round(S.quality)}/100`, 'good');
+  log(`🚀 Launched <b>${v}</b> (quality ${Math.round(S.quality)}).`);
+  dirty = true; milestone();
+}
+
+function endDay() {
+  const c = CFG(), acc = {};
+  // self-serve: some leads buy without a salesperson
+  const self = S.pipeline * .3, won = rint(self * conv() * .6);
+  S.customers += won;
+  S.pipeline = Math.max(0, (S.pipeline - self) * .8);
+  // support → satisfaction
+  const tickets = S.customers * I().tickets;
+  const cov = tickets < .5 ? 1 : Math.min(1, (S.supportPts + .5) / tickets);
+  S.coverage = S.coverage * .6 + cov * .4; S.supportPts = 0;
+  S.sat = clamp(.45 * S.quality / 100 + .55 * S.coverage, 0, 1);
+  // churn
+  const churned = Math.min(S.customers, rint(S.customers * (I().churn + .02 * (1 - S.sat)) * c.churn));
+  S.customers -= churned;
+  // money
+  const gross = mrr() / 30;
+  acc.rev = gross * netFactor(); acc.vat = gross - acc.rev;
+  acc.cogs = c.cogs ? acc.rev * I().cogs : 0;
+  acc.sal = payroll() / 30;
+  acc.rent = rentNow() / 30;
+  acc.loan = 0;
+  if (S.loan) {
+    const interest = S.loan.bal * S.loan.rate / 365, pay = Math.min(S.loan.bal + interest, S.loan.daily);
+    S.loan.bal += interest - pay; acc.loan = pay; acc.interest = interest;
+    if (S.loan.bal < 1) { S.loan = null; log('🏦 Loan fully repaid.'); toast('🏦 Loan repaid', 'good'); }
+  }
+  const pre = acc.rev - acc.cogs - acc.sal - acc.rent - (acc.interest || 0);
+  acc.tax = 0;
+  if (c.incTax) {
+    S.taxAcc += pre;
+    if (S.day % 30 === 0) {
+      if (S.taxAcc > 0) { acc.tax = S.taxAcc * CTRY().inc; S.taxPaid += acc.tax; log(`🧾 Paid ${money(acc.tax)} in income tax on ${money(S.taxAcc)} profit (last 30 days).`); }
+      S.taxAcc = 0;
+    }
+  }
+  const net = acc.rev - acc.cogs - acc.sal - acc.rent - acc.loan - acc.tax;
+  S.cash += net; S.totalRev += acc.rev;
+  S.last = { ...acc, net, won, churned, day: S.day };
+  S.buzz *= .88;
+  S.hist.push(Math.round(mrr())); if (S.hist.length > 60) S.hist.shift();
+  // team
+  if (c.quitting) for (const e of [...employees()]) {
+    if (e.morale < 15 && Math.random() < .5) { log(`😞 <b>${esc(e.name)}</b> quit: morale hit rock bottom.`); toast(`😞 ${esc(e.name)} quit`, 'bad'); fire(e, true); }
+  }
+  S.staff.forEach(e => e.energy = Math.min(100, e.energy + 70));
+  log(`📅 Day ${S.day}: ${money(acc.rev)} revenue · ${money(-(acc.cogs + acc.sal + acc.rent + acc.loan + acc.tax))} costs · ${won ? `+${won} self-serve · ` : ''}${churned ? `−${churned} churned` : 'no churn'}.`);
+  // bankruptcy
+  if (S.cash < 0) {
+    S.debtDays++;
+    if (S.debtDays > c.grace) { S.over = true; save(); return gameOver(); }
+    toast(`⚠️ Negative cash (${S.debtDays}/${c.grace} days of grace). Cut costs${c.loans ? ' or take a loan' : ''}!`, 'bad');
+  } else S.debtDays = 0;
+  // new day
+  S.day++; S.min = 9 * 60; nightT = 1.6;
+  if (S.day % 2 === 0) refreshCandidates();
+  investorCheck();
+  if (c.events !== 'off' && S.day >= S.nextEvent) {
+    randomEvent();
+    const [a, b] = { low: [6, 10], normal: [3, 6], high: [2, 4] }[c.events];
+    S.nextEvent = S.day + Math.round(rand(a, b));
+  }
+  milestone();
+  dirty = true; save();
+}
+
+function milestone() {
+  const v = valuation(); if (v > (S.best || 0)) S.best = v;
+  const M = [
+    ['c1', () => S.customers >= 1, '🎉 First customer!'],
+    ['c10', () => S.customers >= 10, '👥 10 customers'],
+    ['c100', () => S.customers >= 100, '💯 100 customers'],
+    ['c1000', () => S.customers >= 1000, '🏟️ 1,000 customers'],
+    ['v1', () => S.version >= 1, '🚀 First launch'],
+    ['h1', () => employees().length >= 1, '🧑‍💼 First hire'],
+    ['m1', () => mrr() >= 2000, '💵 $2k MRR'],
+    ['m10', () => mrr() >= 20000, '💰 $20k MRR'],
+    ['val1', () => v >= 2e6, '📈 $2M valuation'],
+  ];
+  for (const [k, c, t] of M) if (!S.milestones[k] && c()) { S.milestones[k] = S.day; toast(t, 'good'); log('🏅 ' + t); }
+  if (!S.won && v >= GOAL) {
+    S.won = true; log('🦄 Goal reached!');
+    modal('🦄 You made it!', `<p><b>${esc(S.name)}</b> is worth ${money(v)} on day ${S.day}. Your stake: ${money(v * S.equity / 100)} (${S.equity.toFixed(1)}%).</p><p>Your project is on the leaderboard with <b>${score(S)}</b> points. Keep playing to climb higher.</p>`, [{ t: 'Keep growing' }]);
+  }
+}
+
+function investorCheck() {
+  const OFF = [
+    { k: 'angel', mrr: 2000, amt: 50000, p: 10, who: 'An angel investor' },
+    { k: 'seed', mrr: 12000, amt: 400000, p: 15, who: 'A seed fund' },
+    { k: 'seriesA', mrr: 60000, amt: 3e6, p: 20, who: 'A venture capital firm (Series A)' },
+  ];
+  for (const o of OFF) if (!S.offers[o.k] && mrr() >= o.mrr) {
+    S.offers[o.k] = true;
+    modal('💼 Investment offer', `<p>${o.who} wants to invest <b>${money(o.amt)}</b> for <b>${o.p}%</b> of ${esc(S.name)}.</p><p class="note">You own ${S.equity.toFixed(1)}%. After the deal you'd own ${(S.equity * (1 - o.p / 100)).toFixed(1)}%.</p>`, [
+      { t: `Accept (+${money(o.amt)})`, f() { S.cash += o.amt; S.raised += o.amt; S.equity *= 1 - o.p / 100; log(`💼 Raised ${money(o.amt)} for ${o.p}%.`); } },
+      { t: 'Decline and bootstrap', sec: true, f() { log('💼 Declined an investment offer.'); } },
+    ]);
+  }
+}
+
+// =====================================================================
+// RANDOM EVENTS
+// =====================================================================
+const EVENTS = [
+  { good: true, cond: () => S.quality > 20, run() { S.buzz += 25; modal('📱 Gone viral!', `<p>An influencer talked about ${esc(S.name)}. People are asking about you.</p><p class="note">Buzz +25</p>`, [{ t: 'Awesome' }]); } },
+  { good: true, cond: () => S.version >= 2, run() { S.buzz += 15; modal('📰 Press coverage', `<p>A business outlet wrote a story about ${esc(S.name)}.</p><p class="note">Buzz +15</p>`, [{ t: 'Post it on LinkedIn!' }]); } },
+  { good: true, once: 'grant', cond: () => S.day > 7, run() {
+    modal('🏛️ Innovation grant', `<p>A government innovation grant is open. They approve projects with product quality ≥ 35 (yours: ${Math.round(S.quality)}).</p>`, [
+      { t: 'Apply', f() { if (S.quality >= 35) { S.cash += 30000; S.raised += 30000; toast('🏛️ You won a $30k grant, no equity given!', 'good'); log('🏛️ Won a $30k grant.'); } else { toast('🏛️ Rejected: the product is too early.', 'bad'); S.once.grant = false; } } },
+      { t: 'Not now', sec: true, f() { S.once.grant = false; } }]);
+  } },
+  { good: true, cond: () => true, run() {
+    const c = 1200;
+    modal('🎪 Startup fair', `<p>A booth costs ${money(c)}. It usually brings plenty of interested people.</p>`, [
+      { t: `Go (${money(c)})`, cost: c, f() { S.cash -= c; const l = Math.round(rand(12, 30) * CFG().lead); S.pipeline += l; log(`🎪 The fair brought ${l} leads.`); } },
+      { t: 'Skip', sec: true }]);
+  } },
+  { cond: () => S.customers > 20, run() {
+    const c = Math.round(500 + S.customers * 3);
+    modal('🔥 Outage!', '<p>Your customers can\'t use the service. Pay for emergency outside help?</p>', [
+      { t: `Pay ${money(c)}`, cost: c, f() { S.cash -= c; } },
+      { t: 'Fix it ourselves (some customers leave)', sec: true, f() { const l = Math.round(S.customers * .06 * CFG().churn); S.customers -= l; S.coverage *= .8; log(`🔥 The outage cost ${l} customers.`); } }]);
+  } },
+  { cond: () => employees().length > 0, run() {
+    const e = pick(employees()), up = Math.round(e.salary * .15 / 10) * 10;
+    modal(`🙋 ${esc(e.name)} asks for a raise`, `<p>${esc(e.name)} (${roleName(e.role)}) wants ${money(up)} more per month.</p>`, [
+      { t: `Accept (+${money(up)}/mo)`, f() { e.salary += up; e.morale = Math.min(100, e.morale + 30); } },
+      { t: 'Decline', sec: true, f() { e.morale -= 30; } }]);
+  } },
+  { cond: () => S.customers > 50, run() {
+    const c = 2400;
+    modal('⚔️ A competitor appears', '<p>Another company launched something similar, and cheaper.</p>', [
+      { t: `Fight back with a campaign (${money(c)})`, cost: c, f() { S.cash -= c; S.buzz += 15; } },
+      { t: 'Ignore it (−buzz, some customers leave)', sec: true, f() { S.buzz = Math.max(0, S.buzz - 25); S.customers = Math.round(S.customers * (1 - .05 * CFG().churn)); } }]);
+  } },
+  { cond: () => S.staff.some(e => e.role === 'dev'), run() {
+    modal('🌙 Weekend hackathon', '<p>The team offers to work all weekend to push the product forward.</p>', [
+      { t: "Let's go! (+progress, −morale)", f() { S.devProg += verCost() * .4; S.staff.forEach(e => e.morale -= 15); checkRelease(null); } },
+      { t: 'Rest instead (+morale)', sec: true, f() { S.staff.forEach(e => e.morale = Math.min(100, e.morale + 10)); } }]);
+  } },
+  { good: true, cond: () => S.quality >= 50 && S.customers > 80, run() {
+    const v = Math.round(S.price * 150);
+    modal('🏢 Enterprise deal', `<p>A large company offers a ${money(v)} contract, but demands special attention: the team will be exhausted today.</p>`, [
+      { t: `Sign (+${money(v)})`, f() { S.cash += v * netFactor(); S.staff.forEach(e => e.energy = 10); } },
+      { t: "We can't right now", sec: true }]);
+  } },
+  { cond: () => employees().some(e => e.skill >= 4), run() {
+    const e = pick(employees().filter(e => e.skill >= 4)), up = Math.round(e.salary * .25 / 10) * 10;
+    modal(`🎣 Big Tech wants ${esc(e.name)}`, `<p>A big company offered ${esc(e.name)} (${'★'.repeat(e.skill)}) a higher salary.</p>`, [
+      { t: `Counter-offer (+${money(up)}/mo)`, f() { e.salary += up; e.morale = 90; } },
+      { t: 'Let them go', sec: true, f() { log(`👋 ${esc(e.name)} left for another company.`); fire(e, true); } }]);
+  } },
+];
+function randomEvent() {
+  const wantBad = Math.random() < CFG().bad;
+  let pool = EVENTS.filter(ev => ev.cond() && !(ev.once && S.once[ev.once]) && !!ev.good !== wantBad);
+  if (!pool.length) pool = EVENTS.filter(ev => ev.cond() && !(ev.once && S.once[ev.once]));
+  if (!pool.length) return;
+  const ev = pick(pool); if (ev.once) S.once[ev.once] = true; ev.run();
+}
+
+// =====================================================================
+// TEAM
+// =====================================================================
+function genCandidate() {
+  const role = pick(Object.keys(ROLES));
+  const r = Math.random(), skill = r < .25 ? 1 : r < .55 ? 2 : r < .8 ? 3 : r < .95 ? 4 : 5;
+  const salary = Math.round(ROLES[role].base * CTRY().sal * (0.55 + skill * .25) * rand(.9, 1.1) / 10) * 10;
+  return { id: S.nextId++, name: pick(NAMES), role, skill, salary, energy: 100, morale: 75, ...look() };
+}
+function refreshCandidates() { S.candidates = Array.from({ length: 4 }, genCandidate); dirty = true; }
+function freeDesk() { const used = new Set(S.staff.map(e => e.desk)); for (let i = 0; i < maxDesks(); i++) if (!used.has(i)) return i; return -1; }
+function hire(id) {
+  const c = S.candidates.find(x => x.id === id), d = freeDesk(); if (!c || d < 0) return;
+  c.desk = d; S.staff.push(c); S.candidates = S.candidates.filter(x => x !== c);
+  actors.push(new Actor(c, true));
+  log(`🧑‍💼 Hired <b>${esc(c.name)}</b> (${roleName(c.role)}, ${'★'.repeat(c.skill)}).`);
+  toast(`👋 ${esc(c.name)} joins the team`, 'good'); dirty = true; milestone(); save();
+}
+function fire(e, quiet) {
+  S.staff = S.staff.filter(x => x !== e);
+  const a = actors.find(a => a.emp === e); if (a) a.leave();
+  if (selectedId === e.id) selectedId = null;
+  if (!quiet) { log(`📤 Let <b>${esc(e.name)}</b> go.`); employees().forEach(o => o.morale -= 5); }
+  dirty = true;
+}
+
+// =====================================================================
+// CHARACTERS
+// =====================================================================
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const SPEED = 2.6;
+function bfs(sx, sy, goal) {
+  const prev = new Int32Array(COLS * ROWS).fill(-2), start = sy * COLS + sx, q = [start]; prev[start] = -1;
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h], x = k % COLS, y = (k / COLS) | 0;
+    if (goal(x, y)) { const p = []; let c = k; while (c !== start) { p.push([c % COLS, (c / COLS) | 0]); c = prev[c]; } return p.reverse(); }
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS || solid[ny][nx]) continue;
+      const nk = ny * COLS + nx; if (prev[nk] !== -2) continue; prev[nk] = k; q.push(nk);
+    }
+  }
+  return null;
+}
+class Actor {
+  constructor(emp, spawn) {
+    this.emp = emp; this.path = []; this.phase = 0; this.bubble = null; this.thinkT = rand(2, 6); this.chatT = rand(3, 8); this.sp = 0; this.poi = null;
+    if (spawn) { [this.x, this.y] = DOOR; this.dir = 'up'; this.goDesk(); }
+    else { const d = DESKS[emp.desk]; [this.x, this.y] = d.seat; this.dir = d.face; this.task = 'desk'; this.state = 'idle'; }
+  }
+  get tx() { return Math.round(this.x); } get ty() { return Math.round(this.y); }
+  say(text, dur, emoji = false) { this.bubble = { text, t: dur, max: dur, emoji }; }
+  release() { if (this.poi) { this.poi.busy = null; this.poi = null; } }
+  walkTo(x, y) {
+    const p = bfs(this.tx, this.ty, (i, j) => i === x && j === y);
+    if (!p) { this.state = 'idle'; return false; }
+    if (Math.hypot(this.x - this.tx, this.y - this.ty) > .01) p.unshift([this.tx, this.ty]);
+    this.path = p; this.state = 'walking'; if (!p.length) this.arrive(); return true;
+  }
+  goDesk() { this.release(); this.task = 'desk'; this.walkTo(...DESKS[this.emp.desk].seat); }
+  goBreak() {
+    this.release();
+    const free = activePois().filter(p => !p.busy);
+    const lonelyPing = ITEMS.ping.pois.some(p => p.busy) && free.find(p => ITEMS.ping.pois.includes(p));
+    const choice = lonelyPing && Math.random() < .7 ? lonelyPing
+      : free.length ? free.map(p => [p, p.rate + p.mor * 4 + rand(-60, 60)]).sort((a, b) => b[1] - a[1])[0][0] : null;
+    if (choice) { choice.busy = this; this.poi = choice; this.task = 'break'; this.walkTo(...choice.tile); }
+    else this.wander();
+  }
+  wander() {
+    this.task = 'wander'; this.wanderT = rand(4, 8);
+    for (let k = 0; k < 20; k++) {
+      const z = ZONES[Math.floor(Math.random() * S.level)], x = Math.floor(rand(z.x0, z.x1 + 1)), y = Math.floor(rand(6, 11));
+      if (!solid[y][x] && this.walkTo(x, y)) return;
+    }
+    this.state = 'idle';
+  }
+  leave() { this.release(); this.task = 'leave'; if (!this.walkTo(...DOOR)) this.gone = true; }
+  arrive() {
+    this.state = 'idle'; this.path = [];
+    if (this.task === 'desk') this.dir = DESKS[this.emp.desk].face;
+    else if (this.task === 'break') { this.dir = this.poi.face; this.say(this.poi.emo, 2.5, true); }
+    else if (this.task === 'leave') this.gone = true;
+  }
+  update(dt, h) {
+    const e = this.emp;
+    if (this.bubble && (this.bubble.t -= dt) <= 0) this.bubble = null;
+    if (this.state === 'walking') { e.energy = Math.max(0, e.energy - 4 * h); return this.move(dt); }
+    if (this.task === 'desk') {
+      this.work(h);
+      e.energy = Math.max(0, e.energy - 22 * h);
+      e.morale += ((moraleTarget() - e.morale) * .15 - (e.energy < 20 ? 6 : 0)) * h;
+      if ((this.thinkT -= dt) <= 0) { this.thinkT = rand(5, 11); if (Math.random() < .45) this.say(pick(ROLES[e.role].bub), 2, true); }
+      if (e.energy < 35) this.goBreak();
+    } else if (this.task === 'break' || this.task === 'wander') {
+      const rate = this.task === 'break' ? this.poi.rate : 25, mor = this.task === 'break' ? this.poi.mor : 0;
+      e.energy = Math.min(100, e.energy + rate * h); e.morale = Math.min(100, e.morale + mor * h);
+      if ((this.chatT -= dt) <= 0) { this.chatT = rand(6, 12); chitchat(this); }
+      if (this.task === 'wander' && (this.wanderT -= dt) <= 0 && e.energy < 90) this.wander();
+      if (e.energy >= 92) this.goDesk();
+    }
+    e.morale = clamp(e.morale, 0, 100);
+  }
+  work(h) {
+    const e = this.emp, eff = effOf(e), board = S.items.board ? 1.1 : 1;
+    switch (e.role) {
+      case 'dev': S.devProg += eff * h * board; checkRelease(this); break;
+      case 'design': S.polish = Math.min(verCost(), S.polish + eff * .9 * h * board); break;
+      case 'mkt': S.buzz += eff * .45 * h; break;
+      case 'support': S.supportPts += eff * 1.6 * h; break;
+      case 'sales':
+        this.sp = Math.min(this.sp + eff * .7 * h, 3);
+        while (this.sp >= 1 && S.pipeline >= 1) {
+          this.sp--; S.pipeline--;
+          if (Math.random() < conv()) newCustomer(this); else if (Math.random() < .3) this.say('😕', 1.5, true);
+        }
+        break;
+    }
+  }
+  move(dt) {
+    let step = SPEED * dt;
+    while (step > 0 && this.path.length) {
+      const [nx, ny] = this.path[0], dx = nx - this.x, dy = ny - this.y, d = Math.hypot(dx, dy);
+      if (Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 'right' : 'left'; else if (d > .001) this.dir = dy > 0 ? 'down' : 'up';
+      if (d <= step) { this.x = nx; this.y = ny; this.path.shift(); step -= d; }
+      else { this.x += dx / d * step; this.y += dy / d * step; step = 0; }
+    }
+    this.phase += dt * 11;
+    if (!this.path.length) this.arrive();
+  }
+  status() {
+    const e = this.emp;
+    if (this.task === 'leave') return '🚪 Leaving';
+    if (this.state === 'walking') return this.task === 'desk' ? '🚶 Heading back to the desk' : '🚶 Taking a break';
+    if (this.task === 'break') return this.poi.emo + ' ' + this.poi.doing;
+    if (this.task === 'wander') return '🧍 Stretching their legs';
+    if (e.role === 'sales' && S.pipeline < 1) return '😴 No leads: needs marketing';
+    return ROLES[e.role].e + ' ' + ROLES[e.role].verb;
+  }
+}
+
+const CHATS = [
+  ['Seen today\'s numbers?', 'Going up! 📈'], ['Coffee?', 'Always ☕'], ['This bug is driving me nuts', 'Restart and pray 🙏'],
+  ['Team lunch on Friday?', 'I\'m in! 🍕'], ['{F} is very motivated today', 'Keeps saying "let\'s scale"…', '😂'],
+  ['What if we pivot?', 'Not again…'], ['A customer left us 5 stars', 'Nice! ⭐'], ['I need a vacation', 'After the launch 😅'],
+  ['How\'s it going, {B}?', 'Good, learning a lot.'], ['We closed the month in the green', 'Finally! 💚'],
+];
+function chitchat(a) {
+  const b = actors.find(o => o !== a && !o.gone && o.state === 'idle' && (o.task === 'break' || o.task === 'wander') && Math.hypot(o.x - a.x, o.y - a.y) < 4.5);
+  if (!b || Math.random() < .35) return;
+  b.chatT = 8;
+  const lines = pick(CHATS).map(l => l.replace('{B}', b.emp.name).replace('{F}', S.founder));
+  lines.forEach((l, i) => timers.push({ t: i * 1.9, f: () => (i % 2 ? b : a).say(l, 2.2) }));
+}
+function floatText(a, text, color) { floats.push({ x: (a.x + .5) * T, y: (a.y + .5) * T - 30, text, color, t: 1.6 }); }
+
+// =====================================================================
+// MODALS
+// =====================================================================
+function modal(title, html, buttons) { modalQ.push({ title, html, buttons }); if (modalQ.length === 1) showModal(); }
+function showModal() {
+  const m = modalQ[0], el = document.getElementById('modal');
+  if (!m) { el.hidden = true; return; }
+  document.getElementById('mt').innerHTML = m.title; document.getElementById('mb').innerHTML = m.html;
+  const bx = document.getElementById('mbtns'); bx.innerHTML = '';
+  m.buttons.forEach(b => {
+    const btn = document.createElement('button'); btn.className = 'btn' + (b.sec ? ' sec' : ''); btn.textContent = b.t;
+    if (b.cost && S.cash < b.cost) btn.disabled = true;
+    btn.onclick = () => { b.f && b.f(); modalQ.shift(); dirty = true; save(); showModal(); };
+    bx.appendChild(btn);
+  });
+  el.hidden = false;
+}
+function gameOver() {
+  modal('💸 Bankrupt', `<p>${esc(S.name)} ran out of cash. That's startups: most real companies die from running out of money, not out of ideas.</p><p class="note">You reached day ${S.day} with ${S.customers} customers. Your best valuation (${money(S.best)}) stays on the leaderboard.</p>`, [{ t: 'Back to menu', f: showHome }]);
+}
+
+// =====================================================================
+// SIDE PANEL
+// =====================================================================
+const panel = document.getElementById('panel');
+function setTab(t) { tab = t; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); dirty = true; }
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+const bar = (k, c) => `<div class="bar"><i data-bar="${k}" style="background:${c}"></i></div>`;
+const kv = (l, k) => `<div class="kv"><span>${l}</span><b data-v="${k}"></b></div>`;
+const kvs = (l, v) => `<div class="kv"><span>${l}</span><b>${v}</b></div>`;
+const stars = n => `<span class="stars">${'★'.repeat(n)}<span style="opacity:.25">${'★'.repeat(5 - n)}</span></span>`;
+
+function render() {
+  dirty = false;
+  panel.innerHTML = tab === 'company' ? rCompany() : tab === 'team' ? rTeam() : tab === 'office' ? rOffice() : tab === 'pitch' ? rPitch()
+    : '<h3>Logbook</h3><div class="log">' + S.log.map(l => `<p><span class="t">D${l.d} ${l.t}</span>${l.html}</p>`).join('') + '</div>';
+  const pr = document.getElementById('price'); if (pr) pr.oninput = () => { S.price = +pr.value; refresh(); };
+  const fr = document.getElementById('frole'); if (fr) fr.onchange = () => { S.staff[0].role = fr.value; dirty = true; };
+  refresh();
+}
+function sparkline(arr, w = 300, h = 46) {
+  if (arr.length < 2) return '<p class="note">The chart appears after day 2.</p>';
+  const mx = Math.max(...arr, 1), pts = arr.map((v, i) => `${(i / (arr.length - 1) * w).toFixed(1)},${(h - 3 - v / mx * (h - 6)).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"><polyline points="${pts}" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+function rCompany() {
+  const c = CFG(), step = I().ref >= 300 ? 10 : 1, pmax = Math.max(I().ref * 4, S.price);
+  return `
+  <div class="grid2" style="margin-top:8px">
+    <div>Valuation<b data-v="val"></b></div><div>Your stake (<span data-v="eq"></span>)<b data-v="mine"></b></div>
+    <div>Product quality<b data-v="q"></b></div><div>Satisfaction<b data-v="sat"></b></div>
+  </div>
+  <h3>Product · <span data-v="ver"></span></h3>
+  ${kv('Next ' + I().prod + ' <small>(' + roleName('dev') + ')</small>', 'devp')}${bar('dev', '#4f8ef7')}
+  ${kv('Polish <small>(' + roleName('design') + ')</small>', 'polp')}${bar('pol', '#e86a92')}
+  <h3>Pricing</h3>
+  <input type="range" id="price" min="${step}" max="${pmax}" step="${step}" value="${S.price}">
+  ${kv('Price' + (c.vat ? ' (tax incl.)' : ''), 'price')}${kv('Fair price for your quality', 'fair')}${kv('Conversion rate', 'conv')}
+  <h3>Leads</h3>
+  ${kv('Leads per day', 'lpd')}${kv('Leads waiting', 'pipe')}${kv('Buzz (fades 12%/day)', 'buzz')}
+  <button class="btn" style="width:100%;margin-top:6px" data-act="campaign" data-cost="${campaignCost()}">📣 Paid campaign (${money(campaignCost())}) · +${10 * S.level} buzz</button>
+  ${c.loans ? `<h3>Bank</h3>${S.loan ? `${kv('Loan balance', 'loanbal')}${kvs('Daily payment', money(S.loan.daily))}${kvs('Interest rate', pct(S.loan.rate) + ' APR')}`
+    : `<button class="btn sec" style="width:100%" data-act="loan">🏦 Borrow <span data-v="loanmax"></span> · ${pct(CTRY().loan)} APR · 12 months</button>`}` : ''}
+  <h3>Yesterday</h3>
+  ${S.last ? `${kv('Revenue' + (c.vat ? ' (net of sales tax)' : ''), 'lrev')}${c.cogs ? kv('Cost of goods', 'lcogs') : ''}${kv('Payroll' + (c.payroll ? ' + employer taxes' : ''), 'lsal')}${kv('Rent', 'lrent')}${S.last.loan ? kv('Loan payment', 'lloan') : ''}${S.last.tax ? kv('Income tax', 'ltax') : ''}${kv('Net', 'lnet')}` : '<p class="note">First close is at 6:00 PM.</p>'}
+  <h3>MRR (last ${S.hist.length} days)</h3>${sparkline(S.hist)}
+  <p class="note">Goal: ${money(GOAL)} valuation. ${PRESET_LABEL[S.preset]} · ${CTRY().n} · score ×${S.mult}.</p>`;
+}
+function rTeam() {
+  const sel = S.staff.find(e => e.id === selectedId);
+  let h = '';
+  if (sel) h += `<div class="selcard"><b style="font-size:15px">${esc(sel.name)}</b> ${sel.founder ? '⭐ Founder' : stars(sel.skill)}
+      <div class="note" data-v="s_${sel.id}"></div>
+      ${sel.founder ? `<label class="note">Founder's role</label><select id="frole">${Object.keys(ROLES).map(r => `<option value="${r}" ${r === sel.role ? 'selected' : ''}>${ROLES[r].e} ${roleName(r)}</option>`).join('')}</select>`
+        : kvs('Role', ROLES[sel.role].e + ' ' + roleName(sel.role)) + kvs('Salary', money(sel.salary) + '/mo')}
+      ${kv('Energy', 'E_' + sel.id)}${bar('e_' + sel.id, '#f2c94c')}
+      ${kv('Morale', 'M_' + sel.id)}${bar('m_' + sel.id, '#3fbf8a')}
+      ${sel.founder ? '' : `<div class="acts"><button class="btn sec" data-act="raise" data-id="${sel.id}">💸 Raise +10%</button><button class="btn red" data-act="fire" data-id="${sel.id}">Let go</button></div>`}
+    </div>`;
+  h += `<h3>Team · <span data-v="desks"></span> desks · payroll <span data-v="payroll"></span>/mo</h3>`;
+  h += S.staff.map(e => `<div class="row ${e.id === selectedId ? 'sel' : ''}" data-act="sel" data-id="${e.id}">
+    <div class="dot" style="background:${ROLES[e.role].c}">${ROLES[e.role].e}</div>
+    <div class="grow"><b>${esc(e.name)}</b> ${e.founder ? '⭐' : stars(e.skill)}<small data-v="s_${e.id}"></small>
+    <div class="mini">${bar('e_' + e.id, '#f2c94c')}${bar('m_' + e.id, '#3fbf8a')}</div></div></div>`).join('');
+  h += `<p class="note">Bars: <span style="color:#f2c94c">energy</span> and <span style="color:#3fbf8a">morale</span>.${CFG().quitting ? ' People with very low morale quit.' : ''}</p><h3>Candidates</h3>`;
+  const full = freeDesk() < 0;
+  if (full) h += '<p class="note">No free desks. Upgrade the office to hire more.</p>';
+  h += S.candidates.map(c => `<div class="cand"><div class="dot" style="background:${ROLES[c.role].c}">${ROLES[c.role].e}</div>
+    <div style="flex:1;min-width:0"><b>${esc(c.name)}</b> ${stars(c.skill)}<small class="note" style="display:block">${roleName(c.role)} · ${money(c.salary)}/mo</small></div>
+    <button class="btn" data-act="hire" data-id="${c.id}" ${full ? 'disabled data-lock="1"' : ''}>Hire</button></div>`).join('');
+  h += `<button class="btn sec" style="width:100%;margin-top:4px" data-act="cands" data-cost="300">🔎 Find other candidates (${money(300)})</button>
+  <h3>What each role does</h3><p class="note">
+    ${ROLES.dev.e} <b>${roleName('dev')}</b>: builds the next ${I().prod} (raises quality).<br>
+    ${ROLES.design.e} <b>${roleName('design')}</b>: polishes the next ${I().prod}, so the quality jump is bigger.<br>
+    ${ROLES.mkt.e} <b>${roleName('mkt')}</b>: creates buzz, which brings more leads every day.<br>
+    ${ROLES.sales.e} <b>${roleName('sales')}</b>: turns leads into customers.<br>
+    ${ROLES.support.e} <b>${roleName('support')}</b>: keeps customers happy (less churn).</p>`;
+  return h;
+}
+function rOffice() {
+  const L = LEVELS[S.level - 1], N = LEVELS[S.level], rm = CTRY().rent * I().rent;
+  let h = `<h3>Current space</h3><div class="item"><span class="ic">🏠</span><div style="flex:1"><b>${L.n}</b><small>Rent ${money(rentNow())}/mo · ${maxDesks()} desks</small></div></div>`;
+  if (N) h += `<div class="item"><span class="ic">🏢</span><div style="flex:1"><b>Move to: ${N.n}</b><small>${money(N.cost)} fit-out · rent ${money(N.rent * rm)}/mo · +4 desks and new areas</small></div><button class="btn" data-act="upgrade" data-cost="${N.cost}">Move</button></div>`;
+  h += '<h3>Equipment</h3>';
+  for (const [k, it] of Object.entries(ITEMS)) {
+    if (k === 'cooler') continue;
+    const lock = !zoneOpen(it.z);
+    h += `<div class="item"><span class="ic">${it.ic}</span><div style="flex:1"><b>${it.n}</b><small>${lock ? '🔒 Requires ' + LEVELS[it.z].n : esc(it.desc)}</small></div>
+      ${S.items[k] ? '<span class="note">✔ Installed</span>' : `<button class="btn" data-act="buy" data-k="${k}" data-cost="${it.cost}" ${lock ? 'disabled data-lock="1"' : ''}>${money(it.cost)}</button>`}</div>`;
+  }
+  const spots = S.level * 2;
+  h += `<div class="item"><span class="ic">🪴</span><div style="flex:1"><b>Plants (${S.plants}/${spots})</b><small>+3 morale for the whole team, each</small></div>
+    ${S.plants < spots ? `<button class="btn" data-act="plant" data-cost="60">${money(60)}</button>` : '<span class="note">Full</span>'}</div>
+    <p class="note">Team morale target: <b data-v="mtarget"></b>. A comfier office means a more productive team.</p>`;
+  return h;
+}
+function cfgSummary(c) {
+  const ct = COUNTRIES[c.country];
+  return [kvs('Cost profile', ct.n), kvs('Starting capital', money(c.cash)),
+    kvs('Sales tax / VAT', c.vat ? pct(ct.vat) : 'off'), kvs('Employer payroll taxes', c.payroll ? pct(ct.pay) : 'off'), kvs('Income tax', c.incTax ? pct(ct.inc) : 'off'),
+    kvs('Market (leads / conversion / churn / size)', `×${c.lead} / ×${c.conv} / ×${c.churn} / ×${c.market}`),
+    kvs('Random events', `${c.events} · ${pct(c.bad)} bad`), kvs('Bankruptcy grace', c.grace + ' days'), kvs('Bank loans', c.loans ? 'yes' : 'no')].join('');
+}
+function rPitch() {
+  return `<div class="pitch">
+    <h4>${esc(S.name)}</h4><div class="tag">${esc(I().n)} · <span class="diff d-${S.preset}">${PRESET_LABEL[S.preset]}</span> · day ${S.day}</div>
+    <p><i>"${esc(S.pitch || 'No pitch yet')}"</i></p>
+    <div class="lbl">Problem</div><p>${esc(S.problem || '—')}</p>
+    <div class="lbl">Target customer</div><p>${esc(S.customer || '—')}</p>
+    <div class="lbl">Simulated metrics</div>
+    ${kv('MRR', 'mrr')}${kv('7-day growth', 'g7')}${kv('Customers', 'cust')}${kv('Satisfaction', 'sat')}${kv('Team', 'team')}${kv('Capital raised', 'raised')}${kv('Valuation', 'val')}${kv('Leaderboard score', 'score')}
+    <div class="lbl">Simulation settings</div>${cfgSummary(S.cfg)}
+  </div>
+  <h3>Take it to real life</h3>
+  <label class="row"><input type="checkbox" data-act="real" ${S.realInterest ? 'checked' : ''}> <span>I'm interested in building this for real</span></label>
+  <p class="note">${S.preset === 'founder' ? 'This project uses real-world costs (Founder mode) and will be eligible for the online investor portal when it launches.' : 'Only projects played in 🚀 Founder mode will be eligible for the investor portal, because they use real-world costs.'}
+  For now everything is saved on this computer. Simulated metrics are <b>not</b> real results and are not an investment offer.</p>
+  <button class="btn sec" style="width:100%" data-act="copy">📋 Copy pitch as text</button>`;
+}
+function vals() {
+  const v = valuation(), dc = verCost(), V = {
+    day: 'Day ' + S.day, clock: hhmm(), cash: money(S.cash), mrr: money(mrr()), cust: S.customers.toLocaleString('en-US'),
+    val: money(v), eq: S.equity.toFixed(1) + '%', mine: money(v * S.equity / 100), q: Math.round(S.quality) + '/100', sat: pct(S.sat),
+    ver: I().ver(S.version), devp: `${Math.floor(S.devProg)}/${Math.ceil(dc)}`, polp: pct(S.polish / dc),
+    price: money(S.price) + I().unit, fair: money(fairPrice()), conv: (conv() * 100).toFixed(1) + '%',
+    lpd: leadsPerDay().toFixed(1), pipe: Math.floor(S.pipeline), buzz: Math.round(S.buzz),
+    desks: `${S.staff.length}/${maxDesks()}`, payroll: money(payroll()), mtarget: Math.round(moraleTarget()),
+    team: S.staff.length + (S.staff.length === 1 ? ' person' : ' people'), raised: money(S.raised), score: score(S) + ' pts',
+    loanmax: money(loanMax()), loanbal: S.loan ? money(S.loan.bal) : '',
+  };
+  const hl = S.hist.length;
+  V.g7 = hl >= 8 && S.hist[hl - 8] > 0 ? pct(S.hist[hl - 1] / S.hist[hl - 8] - 1) : '—';
+  if (S.last) Object.assign(V, { lrev: money(S.last.rev), lcogs: money(-S.last.cogs), lsal: money(-S.last.sal), lrent: money(-S.last.rent), lloan: money(-S.last.loan), ltax: money(-S.last.tax), lnet: money(S.last.net) });
+  const B = { dev: S.devProg / dc * 100, pol: S.polish / dc * 100 };
+  for (const a of actors) { const e = a.emp; V['s_' + e.id] = a.status(); V['E_' + e.id] = Math.round(e.energy); V['M_' + e.id] = Math.round(e.morale); B['e_' + e.id] = e.energy; B['m_' + e.id] = e.morale; }
+  return [V, B];
+}
+function refresh() {
+  if (!S) return;
+  const [V, B] = vals();
+  document.querySelectorAll('[data-v]').forEach(el => { const v = V[el.dataset.v]; if (v !== undefined && el.textContent !== String(v)) el.textContent = v; });
+  document.querySelectorAll('[data-bar]').forEach(el => el.style.width = clamp(B[el.dataset.bar] || 0, 0, 100) + '%');
+  document.querySelectorAll('[data-cost]').forEach(el => { if (!el.dataset.lock) el.disabled = S.cash < +el.dataset.cost; });
+  const net = document.querySelector('[data-v=lnet]'); if (net) net.style.color = S.last.net >= 0 ? '#3fbf8a' : '#e8705f';
+  document.querySelector('.top [data-v=cash]').style.color = S.cash < 0 ? '#e8705f' : '';
+}
+panel.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const id = +el.dataset.id;
+  switch (el.dataset.act) {
+    case 'sel': selectedId = selectedId === id ? null : id; dirty = true; break;
+    case 'hire': hire(id); break;
+    case 'cands': S.cash -= 300; refreshCandidates(); break;
+    case 'raise': { const p = S.staff.find(x => x.id === id); p.salary = Math.round(p.salary * 1.1 / 10) * 10; p.morale = Math.min(100, p.morale + 25); toast(`💸 ${esc(p.name)} is happy`, 'good'); dirty = true; break; }
+    case 'fire': { const p = S.staff.find(x => x.id === id); modal(`Let ${esc(p.name)} go?`, '<p class="note">The rest of the team loses some morale.</p>', [{ t: 'Yes, let go', f() { fire(p); } }, { t: 'Cancel', sec: true }]); break; }
+    case 'campaign': S.cash -= campaignCost(); S.buzz += 10 * S.level; toast('📣 Campaign launched'); log(`📣 Paid campaign (${money(campaignCost())}).`); break;
+    case 'loan': {
+      const amt = loanMax(), r = CTRY().loan, n = 365, dr = r / 365, daily = amt * dr / (1 - Math.pow(1 + dr, -n));
+      modal('🏦 Bank loan', `<p>Borrow <b>${money(amt)}</b> at ${pct(r)} APR, repaid daily over 12 months (${money(daily)}/day, ${money(daily * 30)}/mo).</p><p class="note">Total repaid ≈ ${money(daily * n)}. The debt is subtracted from your valuation.</p>`,
+        [{ t: 'Take the loan', f() { S.cash += amt; S.loan = { bal: amt, rate: r, daily }; log(`🏦 Took a ${money(amt)} loan.`); } }, { t: 'Cancel', sec: true }]);
+      break;
+    }
+    case 'upgrade': { const N = LEVELS[S.level]; S.cash -= N.cost; S.level++; rebuildSolid(); toast(`🏢 Moved to the ${N.n}!`, 'good'); log(`🏢 Moved to the <b>${N.n}</b>.`); refreshCandidates(); dirty = true; break; }
+    case 'buy': { const k = el.dataset.k; S.cash -= ITEMS[k].cost; S.items[k] = true; rebuildSolid(); toast(`${ITEMS[k].ic} ${ITEMS[k].n} installed`); log(`${ITEMS[k].ic} Bought: ${ITEMS[k].n}.`); dirty = true; break; }
+    case 'plant': S.cash -= 60; S.plants++; rebuildSolid(); dirty = true; break;
+    case 'real': S.realInterest = el.checked; save(); return;
+    case 'copy': copyPitch(); return;
+  }
+  save();
+});
+function copyPitch() {
+  const [V] = vals(), c = S.cfg;
+  const txt = `${S.name} (${I().n})\n"${S.pitch}"\nProblem: ${S.problem}\nTarget customer: ${S.customer}\n\nSimulated in Founder Tycoon (${PRESET_LABEL[S.preset]}, ${COUNTRIES[c.country].n}, day ${S.day}):\n- MRR: ${V.mrr}\n- Customers: ${V.cust}\n- 7-day growth: ${V.g7}\n- Satisfaction: ${V.sat}\n- Team: ${V.team}\n- Simulated valuation: ${V.val}\n\n(Simulation: these are not real results.)`;
+  navigator.clipboard?.writeText(txt).then(() => toast('📋 Pitch copied'), () => toast('Could not copy', 'bad'));
+}
+
+// map clicks / controls
+let scale = 1;
+cv.onclick = e => {
+  const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) / scale, my = (e.clientY - r.top) / scale;
+  let best = null, bd = 16;
+  actors.forEach(a => { const d = Math.hypot((a.x + .5) * T - mx, feetY(a) - 12 - my); if (d < bd) { bd = d; best = a; } });
+  if (best) { selectedId = best.emp.id; setTab('team'); }
+};
+function resize() {
+  const st = document.getElementById('stage');
+  scale = Math.min((st.clientWidth - 30) / W, (st.clientHeight - 50) / H);
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+  cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+document.getElementById('pause').onclick = togglePause;
+function togglePause() { paused = !paused; const b = document.getElementById('pause'); b.textContent = paused ? '▶' : '⏸'; b.classList.toggle('on', paused); }
+addEventListener('keydown', e => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); togglePause(); } });
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { speed = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); });
+document.getElementById('menu').onclick = () => { save(); showHome(); };
+
+// =====================================================================
+// MAIN MENU: PROJECTS, NEW PROJECT (presets + advanced settings), LEADERBOARD
+// =====================================================================
+const homebox = document.getElementById('homebox');
+let homeTab = 'projects', rankFilter = 'all';
+// Advanced settings definition: [key, label, help, type, options]
+const SETTINGS = [
+  ['h', 'Economy & taxes'],
+  ['country', 'Cost profile', 'Salaries, rent, tax rates and loan rates (approximate).', 'select', Object.entries(COUNTRIES).map(([k, c]) => [k, c.n])],
+  ['cash', 'Starting capital (USD)', 'Your savings or pre-seed money.', 'number', [1000, 500000, 1000]],
+  ['vat', 'Sales tax / VAT', 'Part of each sale goes to the government.', 'check'],
+  ['payroll', 'Employer payroll taxes', 'Social security and similar on top of salaries.', 'check'],
+  ['incTax', 'Corporate income tax', 'Paid every 30 days on profit.', 'check'],
+  ['cogs', 'Cost of goods sold', 'Each sale has a direct cost (ingredients, stock, servers…).', 'check'],
+  ['loans', 'Bank loans available', 'Borrow with interest, repaid daily.', 'check'],
+  ['h', 'Market'],
+  ['lead', 'Lead generation', 'How easily people find you.', 'range', [.3, 2, .05]],
+  ['conv', 'Conversion', 'How easily leads buy.', 'range', [.3, 2, .05]],
+  ['churn', 'Churn', 'How quickly customers leave. Higher = harder.', 'range', [.3, 3, .05]],
+  ['market', 'Market size', 'Total number of potential customers.', 'range', [.2, 3, .05]],
+  ['h', 'Risk & people'],
+  ['events', 'Random events', 'How often things happen.', 'select', [['off', 'Off'], ['low', 'Rare'], ['normal', 'Normal'], ['high', 'Frequent']]],
+  ['bad', 'Share of bad events', '0 = only good news, 1 = only problems.', 'range', [0, 1, .05]],
+  ['grace', 'Bankruptcy grace (days)', 'Days you can stay below $0 before closing.', 'number', [0, 30, 1]],
+  ['quitting', 'Unhappy employees quit', '', 'check'],
+  ['daySec', 'Day length (seconds at 1x)', '', 'select', [[30, '30 s'], [45, '45 s'], [60, '60 s'], [90, '90 s']]],
+];
+function settingsHTML(c) {
+  return '<div class="sgrid">' + SETTINGS.map(([k, l, help, type, o]) => {
+    if (k === 'h') return `<h5>${l}</h5>`;
+    const v = c[k], sm = help ? `<small>${help}</small>` : '';
+    if (type === 'check') return `<label class="s chk"><input type="checkbox" data-cfg="${k}" ${v ? 'checked' : ''}><span>${l}${sm}</span></label>`;
+    if (type === 'select') return `<label class="s"><span>${l}</span><select data-cfg="${k}">${o.map(([ov, ol]) => `<option value="${ov}" ${String(ov) === String(v) ? 'selected' : ''}>${ol}</option>`).join('')}</select>${sm}</label>`;
+    if (type === 'number') return `<label class="s"><span>${l}</span><input type="number" data-cfg="${k}" min="${o[0]}" max="${o[1]}" step="${o[2]}" value="${v}">${sm}</label>`;
+    return `<label class="s"><span>${l}: <b data-rv="${k}">×${v}</b></span><input type="range" data-cfg="${k}" min="${o[0]}" max="${o[1]}" step="${o[2]}" value="${v}">${sm}</label>`;
+  }).join('') + '</div>';
+}
+function readCfg(form) {
+  const c = {};
+  form.querySelectorAll('[data-cfg]').forEach(el => {
+    const k = el.dataset.cfg;
+    c[k] = el.type === 'checkbox' ? el.checked : (k === 'country' || k === 'events') ? el.value : +el.value;
+  });
+  c.cash = clamp(c.cash || 1000, 1000, 500000); c.grace = clamp(Math.round(c.grace || 0), 0, 30);
+  return c;
+}
+function showHome() {
+  document.getElementById('modal').hidden = true; modalQ = [];
+  document.getElementById('home').hidden = false;
+  const all = Object.values(allProjects());
+  const tabBtn = (k, l) => `<button class="btn ${homeTab === k ? '' : 'sec'}" data-h="${k}">${l}</button>`;
+  let h = `<p class="logo">Founder <span>Tycoon</span></p><p class="sub">Create your project, grow your company, and see whether the idea could work in real life.</p>
+  <div class="hometabs">${tabBtn('projects', '🗂️ My projects')}${tabBtn('new', '➕ New project')}${tabBtn('ranking', '🏆 Leaderboard')}</div>`;
+  if (homeTab === 'projects') {
+    h += all.length ? all.sort((a, b) => b.created - a.created).map(p => `<div class="proj"><div class="grow"><b>${esc(p.name)}</b> <span class="diff d-${p.preset}">${PRESET_LABEL[p.preset]}</span>${p.over ? ' 💸' : p.won ? ' 🦄' : ''}
+      <small>${esc(INDUSTRIES[p.industry].n)} · ${COUNTRIES[p.cfg.country].n} · day ${p.day} · ${p.customers} customers · ${score(p)} pts</small></div>
+      ${p.over ? '' : `<button class="btn" data-open="${p.id}">Play</button>`}<button class="btn red" data-del="${p.id}" title="Delete">🗑</button></div>`).join('')
+      : '<p class="note">No projects yet. Create your first one.</p>';
+  } else if (homeTab === 'new') {
+    h += `<form class="form" id="nf">
+      <h4>1 · Your project</h4>
+      <label class="f">Project name</label><input type="text" name="name" maxlength="40" required placeholder="e.g. MenuQR">
+      <label class="f">One-line pitch</label><input type="text" name="pitch" maxlength="140" placeholder="e.g. Digital menus with WhatsApp ordering for neighborhood cafés">
+      <label class="f">What problem does it solve?</label><textarea name="problem" maxlength="400" placeholder="e.g. Small cafés lose orders during rush hour…"></textarea>
+      <label class="f">Who is your customer?</label><input type="text" name="customer" maxlength="140" placeholder="e.g. Owners of cafés with fewer than 10 tables">
+      <label class="f">Business type</label><select name="industry">${Object.entries(INDUSTRIES).map(([k, v]) => `<option value="${k}">${v.n}</option>`).join('')}</select>
+      <label class="f">Your name (founder)</label><input type="text" name="founder" maxlength="16" placeholder="You">
+      <h4>2 · How do you want to play?</h4>
+      <div class="presets">${Object.entries(PRESETS).map(([k, p]) => `<label><input type="radio" name="preset" value="${k}" ${k === 'student' ? 'checked' : ''}><b>${p.n}</b><small>${p.desc}</small></label>`).join('')}
+        <label><input type="radio" name="preset" value="custom"><b>⚙️ Custom</b><small>Set every rule yourself below.</small></label></div>
+      <details class="adv" id="adv"><summary>3 · Advanced settings (real-life rules)</summary><div id="sets">${settingsHTML(PRESETS.student.cfg)}</div>
+        <p class="note">Country figures are rough averages for gameplay, not tax or legal advice.</p></details>
+      <div class="multbox"><span>Leaderboard score multiplier</span><b id="multv">×${multOf(PRESETS.student.cfg)}</b></div>
+      <div class="mbtns"><button class="btn">🚀 Found the company</button></div></form>`;
+  } else {
+    const list = all.filter(p => rankFilter === 'all' || p.preset === rankFilter).sort((a, b) => score(b) - score(a));
+    h += `<div class="rfilter">${[['all', 'All'], ...Object.entries(PRESET_LABEL)].map(([k, l]) => `<button class="btn ${rankFilter === k ? '' : 'sec'}" data-rf="${k}">${l}</button>`).join('')}</div>`;
+    h += list.length ? `<table class="rank"><tr><th>#</th><th>Project</th><th>Mode</th><th>Best valuation</th><th class="n">Score</th></tr>` +
+      list.map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(p.name)}</b>${p.realInterest ? ' 🌱' : ''}<br><span class="note">${esc(INDUSTRIES[p.industry].n)} · ${COUNTRIES[p.cfg.country].n}</span></td><td><span class="diff d-${p.preset}">${PRESET_LABEL[p.preset]}</span><br><span class="note">×${p.mult}</span></td><td>${money(p.best || 0)}</td><td class="n"><b>${score(p)}</b></td></tr>`).join('') + '</table>'
+      : '<p class="note">No projects here yet.</p>';
+    h += '<p class="note">Score = best valuation (in thousands) × difficulty multiplier. 🌱 = the founder wants to build it for real. This leaderboard is local; the global leaderboard comes with the online portal.</p>';
+  }
+  if (S && !S.over) h += `<div class="mbtns"><button class="btn sec" data-close>← Back to ${esc(S.name)}</button></div>`;
+  homebox.innerHTML = h;
+  const nf = document.getElementById('nf');
+  if (nf) wireNewForm(nf);
+}
+function wireNewForm(nf) {
+  const sets = nf.querySelector('#sets'), multv = nf.querySelector('#multv');
+  const upd = () => { const c = readCfg(nf); multv.textContent = '×' + multOf(c); nf.querySelectorAll('[data-rv]').forEach(el => el.textContent = '×' + c[el.dataset.rv]); };
+  nf.querySelectorAll('[name=preset]').forEach(r => r.onchange = () => {
+    if (r.value === 'custom') { nf.querySelector('#adv').open = true; return upd(); }
+    sets.innerHTML = settingsHTML(PRESETS[r.value].cfg); upd();
+  });
+  sets.addEventListener('input', () => { nf.querySelector('[name=preset][value=custom]').checked = true; upd(); });
+  nf.onsubmit = e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(nf)); f.name = (f.name || '').trim(); if (!f.name) return;
+    newProject(f, readCfg(nf), f.preset); save();
+  };
+}
+homebox.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.h) { homeTab = t.dataset.h; showHome(); }
+  else if (t.dataset.rf) { rankFilter = t.dataset.rf; showHome(); }
+  else if (t.dataset.open) loadProject(t.dataset.open);
+  else if (t.dataset.del) {
+    const all = allProjects(), p = all[t.dataset.del];
+    // two-click confirm: confirm() can be blocked when the game runs embedded
+    if (!t.dataset.sure) { t.dataset.sure = 1; t.textContent = 'Delete?'; return; }
+    delete all[t.dataset.del]; try { localStorage.setItem(STORE, JSON.stringify(all)); } catch { } if (S && S.id === p.id) S = null; showHome();
+  } else if ('close' in t.dataset) document.getElementById('home').hidden = true;
+});
+
+// =====================================================================
+// DRAWING
+// =====================================================================
+const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+const RR = (x, y, w, h, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill(); };
+const C = (x, y, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+const E = (x, y, rx, ry, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
+
+function drawRoom() {
+  for (let y = 2; y < ROWS - 1; y++) for (let x = 1; x < COLS - 1; x++) {
+    if (x === 11 || x === 21) continue;
+    const z = x <= 10 ? 0 : x <= 20 ? 1 : 2;
+    if (z === 0) { R(x * T, y * T, T, T, (x + y) % 2 ? '#a6a6a0' : '#9d9d97'); if ((x * 13 + y * 7) % 11 === 0) E(x * T + 12, y * T + 12, 6, 3, '#8d8d87'); }
+    else if (z === 1) { R(x * T, y * T, T, T, y % 2 ? '#c4955f' : '#cc9e6b'); R(x * T, y * T + T - 1, T, 1, '#b0834f'); if ((x * 7 + y * 3) % 5 === 0) R(x * T, y * T, 1, T, '#b0834f'); }
+    else R(x * T, y * T, T, T, (x + y) % 2 ? '#56669f' : '#5b6ba6');
+  }
+  if (zoneOpen(1)) { RR(13.4 * T, 14.3 * T, 6 * T, 4.2 * T, 10, '#7a5a9c'); RR(13.4 * T + 4, 14.3 * T + 4, 6 * T - 8, 4.2 * T - 8, 8, '#8a6aae'); }
+  if (zoneOpen(2)) RR(22.5 * T, 13.6 * T, 8 * T, 4.8 * T, 10, '#46559a');
+  R(0, 0, W, 2 * T, '#3b4058'); R(0, 2 * T - 8, W, 8, '#2f3347'); R(0, 2 * T - 2, W, 2, '#23263a');
+  const win = (tx, n) => {
+    RR(tx * T, 6, n * T, 30, 3, '#252839');
+    const g = ctx.createLinearGradient(0, 8, 0, 34); g.addColorStop(0, '#8fd3ff'); g.addColorStop(1, '#d6f1ff');
+    ctx.fillStyle = g; ctx.fillRect(tx * T + 3, 9, n * T - 6, 24); R(tx * T + n * T / 2 - 1, 9, 2, 24, '#252839'); R(tx * T + 8, 12, 10, 2, '#ffffff99');
+  };
+  win(2, 3); if (zoneOpen(1)) { win(13, 3); win(17, 3); } if (zoneOpen(2)) { win(23, 3); win(27, 3); }
+  if (S.items.board) {   // the whiteboard shows your real MRR curve
+    const x0 = 5.4 * T, w = 3.2 * T; R(x0, 5, w, 32, '#8a8f9e'); R(x0 + 2, 7, w - 4, 26, '#fbfbf7');
+    const hs = S.hist.slice(-12);
+    if (hs.length > 1) {
+      const mx = Math.max(...hs, 1); ctx.strokeStyle = '#3fbf8a'; ctx.lineWidth = 1.5; ctx.beginPath();
+      hs.forEach((v, i) => { const px = x0 + 6 + i / (hs.length - 1) * (w - 12), py = 30 - v / mx * 18; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.stroke();
+    } else { R(x0 + 8, 12, 20, 6, '#ffd27e'); R(x0 + 32, 14, 16, 6, '#ff9ab8'); }
+  }
+  const cx = 9.9 * T, cy = 22; C(cx, cy, 10, '#252839'); C(cx, cy, 8, '#f4f1e8');
+  const m = S.min % 60, hh = (S.min / 60) % 12;
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.sin(hh / 12 * 6.283) * 4.5, cy - Math.cos(hh / 12 * 6.283) * 4.5);
+  ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.sin(m / 60 * 6.283) * 6.5, cy - Math.cos(m / 60 * 6.283) * 6.5); ctx.stroke();
+  R(0, 2 * T, T, H, '#2b2f42'); R(W - T, 2 * T, T, H, '#2b2f42'); R(0, H - T, W, T, '#2b2f42');
+  R(T - 2, 2 * T, 2, H - 3 * T, '#3b4058'); R(W - T, 2 * T, 2, H - 3 * T, '#3b4058'); R(T, H - T, W - 2 * T, 2, '#3b4058');
+  for (const wx of [11, 21]) for (let y = 2; y < ROWS - 1; y++) {
+    if (!solid[y][wx]) { R(wx * T, y * T, T, T, '#8f8a80'); continue; }
+    R(wx * T + 4, y * T, T - 8, T, '#3b4058'); R(wx * T + 4, y * T, 3, T, '#4a5070');
+  }
+  R(DOOR[0] * T - 6, H - T, T + 12, T, '#5a3d26'); R(DOOR[0] * T - 2, H - T + 2, T + 4, T - 2, '#8b5e3c'); C(DOOR[0] * T + T - 2, H - T / 2, 1.6, '#f2c94c');
+  R(DOOR[0] * T - 4, H - T - 6, T + 8, 5, '#6c4c33');
+  ZONES.forEach((z, i) => {
+    if (zoneOpen(i)) return;
+    R(z.x0 * T, 2 * T, (z.x1 - z.x0 + 1) * T, (ROWS - 3) * T, 'rgba(12,14,22,.82)');
+    ctx.fillStyle = '#9aa0b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '22px "Segoe UI Emoji"'; ctx.fillText('🔒', (z.x0 + z.x1 + 1) / 2 * T, 9 * T);
+    ctx.font = '600 11px "Segoe UI"'; ctx.fillText('Unlocks with: ' + LEVELS[i].n, (z.x0 + z.x1 + 1) / 2 * T, 10.4 * T);
+  });
+}
+function deskOwner(i) { return actors.find(a => !a.gone && a.task !== 'leave' && a.emp.desk === i); }
+function drawDesk(i) {
+  const d = DESKS[i]; if (!zoneOpen(d.z)) return;
+  const X = d.x * T, Y = d.y * T, w = 3 * T, h = 2 * T, t = performance.now() / 1000;
+  const own = deskOwner(i), on = own && own.state === 'idle' && own.task === 'desk', up = d.face === 'up';
+  const [sx, sy] = d.seat.map(v => (v + .5) * T);
+  if (!up) R(sx - 8, sy - 13, 16, 6, '#30333f');
+  E(sx, sy + 3, 8, 6, own ? '#3b3f4d' : '#33363f');
+  R(X + 3, Y + h - 3, w - 6, 4, 'rgba(0,0,0,.2)');
+  RR(X + 1, Y + 2, w - 2, h - 7, 3, '#a8774a'); R(X + 1, Y + h - 8, w - 2, 4, '#7f5634');
+  const mx = X + w / 2 - 12;
+  if (up) {
+    R(mx, Y + 4, 24, 15, '#1d1f27'); R(mx + 2, Y + 6, 20, 11, on ? '#1e3b57' : '#2a3140');
+    if (on) for (let k = 0; k < 4; k++) R(mx + 4 + (k % 2) * 3, Y + 7.5 + k * 2.4, 6 + ((k * 5 + Math.floor(t * 2)) % 9), 1.2, ['#7ee0ff', '#ffd27e', '#c49bff', '#8dffb0'][k]);
+    R(mx + 10, Y + 19, 4, 3, '#333'); R(mx + 4, Y + 27, 16, 5, '#e3e3e3');
+  } else {
+    R(mx + 4, Y + 6, 16, 5, '#e3e3e3'); R(mx, Y + 20, 24, 14, '#2c2f39'); R(mx + 10, Y + 17, 4, 3, '#333');
+    if (on) R(mx - 1, Y + 34, 26, 1.5, '#7ee0ff88');
+  }
+  if (own) { C(X + 9, Y + (up ? 28 : 12), 3.2, ROLES[own.emp.role].c); C(X + 9, Y + (up ? 28 : 12), 1.8, '#5a3b22'); }
+  R(X + w - 16, Y + (up ? 10 : 24), 9, 11, '#f5f0d8'); R(X + w - 15, Y + (up ? 12 : 26), 6, 1, '#999');
+}
+function drawFurniture(f) {
+  const X = f.x * T, Y = f.y * T, w = f.w * T, h = f.h * T, t = performance.now() / 1000;
+  switch (f.t) {
+    case 'coffee':
+      R(X, Y, w, h, '#9aa0ad'); R(X, Y, w, 6, '#c7ccd6'); R(X, Y + h - 3, w, 3, '#6f7480');
+      R(X + 6, Y - 8, 16, 22, '#2d2f36'); R(X + 9, Y, 10, 6, '#555'); C(X + 19, Y - 4, 1.5, Math.sin(t * 3) > 0 ? '#ff5b5b' : '#7a2020');
+      R(X + 28, Y + 2, 7, 8, '#fff'); R(X + 37, Y + 2, 7, 8, '#ffd27e');
+      break;
+    case 'cooler': R(X + 5, Y + 6, 14, 18, '#e8ebf0'); RR(X + 6, Y - 8, 12, 15, 4, '#7fc8ff'); R(X + 8, Y - 5, 3, 9, '#bfe5ff'); break;
+    case 'couch':
+      R(X + 2, Y + h, w - 4, 4, 'rgba(0,0,0,.2)');
+      RR(X, Y - 6, w, h + 2, 6, '#6a4f99'); RR(X + 3, Y + 6, w - 6, h - 2, 4, '#8466b8');
+      RR(X - 2, Y - 2, 8, h + 4, 4, '#5a4285'); RR(X + w - 6, Y - 2, 8, h + 4, 4, '#5a4285'); R(X + w / 2 - 1, Y + 6, 2, h - 4, '#6a4f99');
+      break;
+    case 'vending':
+      R(X + 1, Y - 10, w - 2, h + 8, '#c0392b'); R(X + 4, Y - 6, w - 10, h - 8, '#1d1f27');
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) R(X + 6 + c * 6, Y - 3 + r * 9, 4, 5, ['#ffd27e', '#7ee0ff', '#ff9ab8', '#8dffb0'][(r + c) % 4]);
+      R(X + w - 6, Y + 6, 3, 8, '#e3e3e3');
+      break;
+    case 'pingpong':
+      R(X + 3, Y + h - 1, w - 6, 4, 'rgba(0,0,0,.25)'); R(X + 2, Y + 2, w - 4, h - 6, '#1f7a5a');
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.strokeRect(X + 4, Y + 4, w - 8, h - 10);
+      R(X + 4, Y + h / 2 - 3, w - 8, 1, '#ffffffaa'); R(X + w / 2 - 1, Y, 2, h - 4, '#e9e9e9'); R(X + 2, Y + h - 4, w - 4, 3, '#155a42');
+      break;
+    case 'plant':
+      E(X + 12, Y + 22, 8, 3, 'rgba(0,0,0,.2)'); R(X + 6, Y + 12, 12, 10, '#b5653c'); R(X + 5, Y + 11, 14, 3, '#c87849');
+      C(X + 8, Y + 6, 6, '#2f8f4e'); C(X + 16, Y + 5, 6, '#3aa35c'); C(X + 12, Y, 6, '#46b56a'); C(X + 12, Y + 7, 5, '#2f8f4e');
+      break;
+  }
+}
+const feetY = a => (a.y + .5) * T + 8 - (a.state === 'idle' && a.task === 'break' && a.poi?.sit ? 11 : 0);
+function drawAgent(a) {
+  const e = a.emp, px = (a.x + .5) * T, fy = feetY(a), d = a.dir, shirt = e.founder ? '#2b2b33' : ROLES[e.role].c;
+  const walking = a.state === 'walking', deskSit = a.state === 'idle' && a.task === 'desk', sit = deskSit || (a.state === 'idle' && a.task === 'break' && a.poi?.sit);
+  const swing = walking ? Math.sin(a.phase) * 2.5 : 0, bob = walking ? Math.abs(Math.sin(a.phase)) * 1.2 : 0, by = fy - bob - (sit ? 3 : 0);
+  if (e.id === selectedId) { ctx.strokeStyle = '#7c9cff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, fy, 11, 5, 0, 0, 6.283); ctx.stroke(); }
+  E(px, fy, 7, 3, 'rgba(0,0,0,.25)');
+  if (!sit) {
+    R(px - 4.5, by - 7 + Math.max(0, swing), 4, 7 - Math.max(0, swing), '#2f3550'); R(px + .5, by - 7 + Math.max(0, -swing), 4, 7 - Math.max(0, -swing), '#2f3550');
+    R(px - 5, by - 1, 5, 2, '#222'); R(px, by - 1, 5, 2, '#222');
+  } else if (d === 'down') { R(px - 5, by - 4, 4, 5, '#2f3550'); R(px + 1, by - 4, 4, 5, '#2f3550'); }
+  RR(px - 6, by - 16, 12, 10, 3, shirt); R(px - 6, by - 8, 12, 2, 'rgba(0,0,0,.12)');
+  if (e.founder) R(px - 1, by - 16, 2, 6, ROLES[e.role].c);
+  const typing = deskSit ? Math.sin(performance.now() / 70 + e.id) : 0;
+  if (d === 'left' || d === 'right') { const s = d === 'right' ? 1 : -1; R(px - 2 + s * swing * .6, by - 15, 4, 8, shirt); R(px - 2 + s * swing * .6, by - 8, 4, 3, e.skin); }
+  else { R(px - 9, by - 15 + swing * .5, 3, 8, shirt); R(px + 6, by - 15 - swing * .5, 3, 8, shirt); R(px - 9, by - 8 + swing * .5 + typing, 3, 3, e.skin); R(px + 6, by - 8 - swing * .5 - typing, 3, 3, e.skin); }
+  const hx = px - 5.5, hy = by - 26;
+  if (e.style === 'long' && d !== 'down') R(hx - 1, hy + 2, 13, 13, e.hair);
+  RR(hx, hy, 11, 11, 3, e.skin);
+  if (d === 'up') RR(hx - 1, hy - 1, 13, 12, 4, e.hair);
+  else {
+    RR(hx - 1, hy - 1, 13, 5, 3, e.hair);
+    if (d === 'down') { R(hx - 1, hy + 2, 2, e.style === 'long' ? 12 : 4, e.hair); R(hx + 10, hy + 2, 2, e.style === 'long' ? 12 : 4, e.hair); }
+    else if (d === 'left') R(hx + 8, hy + 2, 4, e.style === 'long' ? 12 : 5, e.hair); else R(hx - 1, hy + 2, 4, e.style === 'long' ? 12 : 5, e.hair);
+    const eh = (performance.now() / 1000 + e.id * 1.7) % 4 < .12 ? .6 : 2;
+    if (d === 'down') { R(hx + 2.5, hy + 5.5, 1.6, eh, '#222'); R(hx + 7, hy + 5.5, 1.6, eh, '#222'); R(hx + 4.5, hy + 8.5, 2, .8, '#b0605088'); }
+    else if (d === 'left') R(hx + 2, hy + 5.5, 1.6, eh, '#222'); else R(hx + 7.4, hy + 5.5, 1.6, eh, '#222');
+  }
+  if (e.style === 'bun') C(px, hy - 2, 3.5, e.hair);
+  if (e.style === 'curly') { C(hx + 1, hy + 1, 3, e.hair); C(hx + 5.5, hy - 1, 3.2, e.hair); C(hx + 10, hy + 1, 3, e.hair); }
+}
+function drawLabel(a) {
+  const e = a.emp, px = (a.x + .5) * T, y = feetY(a) + 3, txt = (e.founder ? '⭐ ' : '') + e.name;
+  ctx.font = '600 7px "Segoe UI","Segoe UI Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const w = ctx.measureText(txt).width + 6;
+  RR(px - w / 2, y, w, 9, 4, 'rgba(20,22,32,.75)'); R(px - w / 2 + 2, y + 7, w - 4, 1, ROLES[e.role].c);
+  ctx.fillStyle = '#fff'; ctx.fillText(txt, px, y + 1);
+}
+function wrap(text, max) {
+  const words = text.split(' '), lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > max && cur) { lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+function drawBubble(a) {
+  const b = a.bubble, px = (a.x + .5) * T, top = feetY(a) - 30, col = ROLES[a.emp.role].c;
+  ctx.globalAlpha = Math.max(0, Math.min(1, b.t * 5, (b.max - b.t) * 8 + .2)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (b.emoji) {
+    const y = top - 8; RR(px - 10, y - 9, 20, 17, 8, '#fff'); C(px + 4, y + 10, 2, '#fff'); C(px + 7, y + 13, 1.2, '#fff');
+    ctx.font = '10px "Segoe UI Emoji","Segoe UI"'; ctx.fillStyle = '#333'; ctx.fillText(b.text, px, y);
+  } else {
+    ctx.font = '8px "Segoe UI","Segoe UI Emoji"';
+    const lines = wrap(b.text, 118), lw = Math.max(...lines.map(l => ctx.measureText(l).width)), w = lw + 12, h = lines.length * 10 + 7;
+    const x = Math.max(T + 2, Math.min(W - T - 2 - w, px - w / 2)), y = Math.max(4, top - h - 2);
+    RR(x - 1, y - 1, w + 2, h + 2, 6, col); RR(x, y, w, h, 5, '#fff');
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(px - 4, y + h); ctx.lineTo(px + 4, y + h); ctx.lineTo(px, y + h + 6); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(px - 3, y + h - 1); ctx.lineTo(px + 3, y + h - 1); ctx.lineTo(px, y + h + 4); ctx.fill();
+    ctx.fillStyle = '#25262e'; lines.forEach((l, k) => ctx.fillText(l, x + w / 2, y + 8.5 + k * 10));
+  }
+  ctx.globalAlpha = 1;
+}
+function drawPingBall() {
+  if (!S.items.ping || !zoneOpen(2)) return;
+  const [p1, p2] = ITEMS.ping.pois, ok = p => p.busy && p.busy.state === 'idle' && p.busy.task === 'break';
+  if (!ok(p1) || !ok(p2)) return;
+  const t = (performance.now() / 700) % 2, k = t < 1 ? t : 2 - t;
+  const x = (p1.tile[0] + .9 + k * (p2.tile[0] - p1.tile[0] - .8)) * T, y = 15.6 * T - Math.abs(Math.sin(k * Math.PI * 2)) * 10;
+  E(x, 15.8 * T, 2, 1, 'rgba(0,0,0,.3)'); C(x, y, 1.8, '#fff7e0');
+}
+
+// =====================================================================
+// LOOP
+// =====================================================================
+function simStep(dt) {
+  const mins = dt * minPerSec(), h = mins / 60;
+  S.min += mins;
+  S.pipeline = Math.min(400, S.pipeline + leadsPerDay() / 9 * h);
+  actors.forEach(a => a.update(dt, h));
+  actors = actors.filter(a => !a.gone);
+  timers.forEach(t => { if ((t.t -= dt) <= 0) t.f(); }); timers = timers.filter(t => t.t > 0);
+  floats.forEach(f => { f.t -= dt; f.y -= 14 * dt; }); floats = floats.filter(f => f.t > 0);
+  if (S.min >= 18 * 60) endDay();
+}
+let last = performance.now(), uiT = 0;
+function frame(now) {
+  const real = Math.min(.05, (now - last) / 1000); last = now;
+  if (S) {
+    const blocked = paused || !document.getElementById('modal').hidden || !document.getElementById('home').hidden || S.over;
+    if (!blocked) simStep(real * speed);
+    if (nightT > 0) nightT -= real;
+    ctx.clearRect(0, 0, W, H);
+    drawRoom();
+    DESKS.forEach((_, i) => drawDesk(i));
+    activeFurn().forEach(drawFurniture);
+    [...actors].sort((a, b) => feetY(a) - feetY(b)).forEach(drawAgent);
+    drawPingBall();
+    actors.forEach(drawLabel);
+    actors.filter(a => a.bubble).forEach(drawBubble);
+    floats.forEach(f => { ctx.globalAlpha = Math.min(1, f.t); ctx.font = '700 9px "Segoe UI"'; ctx.textAlign = 'center'; ctx.fillStyle = '#0008'; ctx.fillText(f.text, f.x + .7, f.y + .7); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.globalAlpha = 1; });
+    if (nightT > 0) {
+      const a = Math.min(1, nightT / .6); R(0, 0, W, H, `rgba(10,12,30,${a * .7})`);
+      ctx.globalAlpha = a; ctx.fillStyle = '#fff'; ctx.font = '700 26px "Segoe UI"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Day ' + S.day, W / 2, H / 2); ctx.globalAlpha = 1;
+    }
+    if ((uiT -= real) <= 0) { uiT = .25; if (dirty) render(); else refresh(); }
+  }
+  requestAnimationFrame(frame);
+}
+addEventListener('beforeunload', save);
+setInterval(save, 15000);
+(() => {   // resume the last project, or open the menu
+  let lastId = null; try { lastId = localStorage.getItem(STORE + '-last'); } catch { }
+  const all = allProjects();
+  if (lastId && all[lastId] && !all[lastId].over) loadProject(lastId);
+  else { homeTab = Object.keys(all).length ? 'projects' : 'new'; showHome(); }
+})();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "founders-way",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "test": "node tests/smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

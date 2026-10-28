@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+
+# Business plans stay private (monetization, legal, crowdfunding)
+PLAN.md
+PLAN-DESKTOP.md
+CROWDFUNDING.md
+
+# Old snapshots
+title-tower-v7.html
