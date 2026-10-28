@@ -27,6 +27,12 @@ Players whose idea gets built get a credit line too ("Idea by …").
 
 Every pull request gets an automatic review with feedback within minutes. The maintainer has the final word.
 
+## Roadmap
+
+- **Now:** the game is a single web page (HTML + JavaScript + three.js) so anyone can play it instantly and every merged change goes live in a minute.
+- **Next:** online leaderboard with server-side replay of each game (anti-cheat).
+- **Later:** a desktop build for PC (Windows/macOS/Linux) and Steam, made by packaging this same code as a desktop app. Contributions keep working: there is no rewrite planned.
+
 ## License
 
 - **Code and in-game content:** [GNU AGPL-3.0](LICENSE). You can read, learn from, modify and share it. If you publish or host a modified version, you must release your full source code under the same license.
