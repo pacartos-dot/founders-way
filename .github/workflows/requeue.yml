@@ -1,0 +1,17 @@
+# When a PR gets new commits, drop the old review labels so the next Claude round reviews it again.
+# Runs from main, never checks out or executes the PR's code.
+name: requeue
+on:
+  pull_request_target:
+    types: [synchronize]
+permissions:
+  pull-requests: write
+  issues: write
+jobs:
+  requeue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - run: gh pr edit "${{ github.event.pull_request.number }}" -R "${{ github.repository }}" --remove-label claude-approved --remove-label needs-changes

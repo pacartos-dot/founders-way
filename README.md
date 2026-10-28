@@ -25,7 +25,7 @@ Players whose idea gets built get a credit line too ("Idea by …").
 - **Weekly challenge winner** → pinned on the Discussions board with your result.
 - **Big contributors** → a written LinkedIn recommendation from the maintainer, describing what you built.
 
-Every pull request gets an automatic review with feedback within minutes. The maintainer has the final word.
+Every pull request gets an automatic review with feedback within about 2 hours. The maintainer has the final word.
 
 ## Roadmap
 
