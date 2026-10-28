@@ -30,7 +30,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_non_write_users: "*"
           claude_args: >-
-            --model claude-sonnet-5-5 --max-turns 25
+            --max-turns 25
             --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review:*),Bash(gh pr comment:*),Bash(gh pr close:*),Bash(gh pr edit:*),Bash(gh issue view:*)"
           prompt: |
             You are the reviewer of Founder's Way, an open-source 3D startup tycoon (repo ${{ github.repository }}).
@@ -79,7 +79,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_non_write_users: "*"
           claude_args: >-
-            --model claude-haiku-5-5 --max-turns 10
+            --max-turns 10
             --allowedTools "Read,Grep,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue edit:*),Bash(gh issue close:*)"
           prompt: |
             Triage new issue #${{ github.event.issue.number }} in ${{ github.repository }} (Founder's Way, a startup tycoon game).
