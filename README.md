@@ -1,5 +1,7 @@
 # Founder's Way
 
+![Founder's Way: the title screen and the headquarters office](media/founders-way.gif)
+
 A 3D startup tycoon where you build **your own** company idea, test it against realistic rules and find out whether it would survive in the real world.
 
 ▶ **[Play in your browser](https://tobeficv.github.io/founders-way/)**. No install, no account. It updates automatically with every merged change.
