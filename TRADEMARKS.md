@@ -17,4 +17,4 @@ The AGPL-3.0 license covers the code, not the brand. The following belong to Fel
 
 If you fork the game, rename it and replace the logo before you publish it.
 
-Questions: open an issue or contact tobeficv@gmail.com.
+Questions: open a [Discussion](https://github.com/tobeficv/founders-way/discussions).
