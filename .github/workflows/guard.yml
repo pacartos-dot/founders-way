@@ -1,0 +1,61 @@
+# Deterministic safety gate (no AI) for every pull request. Required to merge.
+# Runs the guard script from MAIN, never from the PR: the PR's code is only read as a diff, never checked out or run,
+# so a PR cannot change the rules it is judged by. Result = commit status "guard" on the PR's head commit.
+name: guard
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:   # re-check an existing PR by hand
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+
+concurrency:
+  group: guard-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      R: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number || inputs.pr }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Judge the diff
+        run: |
+          SHA=$(gh pr view "$PR" -R "$R" --json headRefOid -q .headRefOid)
+          status() { gh api "repos/$R/statuses/$SHA" -f state="$1" -f context=guard -f description="$2" >/dev/null; }
+          status pending "Checking the changes"
+          D="$RUNNER_TEMP/guard"; mkdir -p "$D"
+          # Fail closed: if the PR can't be read completely, it is blocked.
+          if ! gh pr view "$PR" -R "$R" --json files -q .files > "$D/files.json" \
+             || ! gh pr diff "$PR" -R "$R" > "$D/diff.patch" \
+             || [ "$(jq length "$D/files.json")" -ge 100 ]; then
+            printf '**Safety check: blocked.** This PR is too large to check automatically, so the maintainer will review it.\n' > "$D/report.md"
+            ok=0
+          elif python3 .github/scripts/guard.py "$D/files.json" "$D/diff.patch" > "$D/report.md"; then
+            ok=1
+          else
+            ok=0
+          fi
+          cat "$D/report.md"
+          if [ "$ok" = 1 ]; then
+            status success "Passed the safety check"
+          else
+            status failure "Blocked: needs the maintainer"
+            gh pr edit "$PR" -R "$R" --add-label needs-human --remove-label claude-approved || true
+            gh pr comment "$PR" -R "$R" -F "$D/report.md"
+          fi
