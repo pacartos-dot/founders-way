@@ -7,6 +7,8 @@
 #   - at most 5 PRs and 10 issues per round
 # Claude only READS: each PR/issue is saved to files, Claude returns a JSON verdict,
 # and a plain shell step (not the model) posts it. PR code is never executed.
+# Claude only sees PRs that already passed guard.yml (deterministic, no AI), its reply is scanned
+# for secrets before posting, and its verdict is advice: merging always needs the maintainer.
 name: claude
 on:
   schedule:
@@ -39,12 +41,15 @@ jobs:
         run: |
           now=$(date +%s)
           gh pr list -R "$R" --state open --limit 100 \
-            --json number,author,labels,isDraft,additions,deletions > prs.json
+            --json number,author,labels,isDraft,additions,deletions,headRefOid > prs.json
           queue=()
           for n in $(jq -r '.[] | select(.isDraft | not)
                 | select([.labels[].name] | any(. == "claude-approved" or . == "needs-changes" or . == "wontfix" or . == "needs-human" or . == "spam-suspect") | not)
                 | .number' prs.json); do
             login=$(jq -r ".[] | select(.number == $n) | .author.login" prs.json)
+            sha=$(jq -r ".[] | select(.number == $n) | .headRefOid" prs.json)
+            guard=$(gh api "repos/$R/commits/$sha/statuses" --jq '[.[] | select(.context == "guard")][0].state // "missing"')
+            if [ "$guard" != "success" ]; then echo "#$n: guard is $guard, skipped"; continue; fi
             size=$(jq ".[] | select(.number == $n) | .additions + .deletions" prs.json)
             open=$(jq "[.[] | select(.author.login == \"$login\")] | length" prs.json)
             age=0
@@ -99,6 +104,7 @@ jobs:
           allowed_non_write_users: "*"
           claude_args: >-
             --max-turns 25 --allowedTools "Read,Grep,Glob"
+            --disallowedTools "Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["APPROVE","CHANGES","CLOSE"]},"feedback":{"type":"string"}},"required":["verdict","feedback"]}'
           prompt: |
             You are the reviewer of Founder's Way, an open-source 3D startup tycoon.
@@ -132,10 +138,15 @@ jobs:
       - name: Post the verdict
         env:
           RESULT: ${{ steps.claude.outputs.structured_output }}
+          SECRET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           R="$GITHUB_REPOSITORY"
           VERDICT=$(jq -r .verdict <<<"$RESULT")
           { jq -r .feedback <<<"$RESULT"; printf '\n— Automated review by Claude. The maintainer has the final word.\n'; } > body.md
+          # Never post a secret, even if the model was tricked into reading one.
+          if grep -qF -- "$SECRET" body.md || grep -qE 'sk-ant-|gh[opsu]_[A-Za-z0-9]{20}|github_pat_|BEGIN [A-Z ]*PRIVATE KEY' body.md; then
+            echo "::error::The review looked like it contained a secret. Nothing was posted."; exit 1
+          fi
           case "$VERDICT" in
             APPROVE) gh pr comment "$PR" -R "$R" -F body.md
                      gh pr edit "$PR" -R "$R" --add-label claude-approved --remove-label needs-changes ;;
@@ -178,6 +189,7 @@ jobs:
           allowed_non_write_users: "*"
           claude_args: >-
             --max-turns 8 --allowedTools "Read"
+            --disallowedTools "Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task,Grep,Glob"
             --json-schema '{"type":"object","properties":{"action":{"type":"string","enum":["WELCOME","DUPLICATE","SPAM"]},"labels":{"type":"array","minItems":1,"items":{"type":"string","enum":["idea","bug","balance","translation","good first issue","help wanted"]}},"duplicate_of":{"type":"integer"},"comment":{"type":"string"}},"required":["action","labels","comment"]}'
           prompt: |
             Triage issue #${{ matrix.issue }} of Founder's Way, a startup tycoon game.
@@ -192,10 +204,14 @@ jobs:
       - name: Post the triage
         env:
           RESULT: ${{ steps.claude.outputs.structured_output }}
+          SECRET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           R="$GITHUB_REPOSITORY"
           ACTION=$(jq -r .action <<<"$RESULT")
           jq -r .comment <<<"$RESULT" > body.md
+          if grep -qF -- "$SECRET" body.md || grep -qE 'sk-ant-|gh[opsu]_[A-Za-z0-9]{20}|github_pat_|BEGIN [A-Z ]*PRIVATE KEY' body.md; then
+            echo "::error::The reply looked like it contained a secret. Nothing was posted."; exit 1
+          fi
           gh issue comment "$ISSUE" -R "$R" -F body.md
           jq -r '.labels[]?' <<<"$RESULT" | while read -r L; do gh issue edit "$ISSUE" -R "$R" --add-label "$L"; done
           case "$ACTION" in

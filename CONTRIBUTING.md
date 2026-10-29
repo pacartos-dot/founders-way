@@ -25,6 +25,16 @@ Thanks for helping! The game is shaped by its players, and you don't need to cod
 - No new external dependencies, trackers, ads or network calls without discussion.
 - Balance changes need a reason (data, a source or a playtest).
 
+### Automatic safety check
+Every PR runs a safety check (`guard`) that must pass before it can be merged. It is a plain script, not an AI, so text in a PR cannot change its result. A PR may only change `index.html`, images in `media/` and documentation files. It is blocked if the new code adds:
+- network calls, new `<script>`/`<iframe>` tags or links to unknown sites;
+- dynamic code (`eval`, `new Function`…), calls built from strings, or obfuscated text;
+- invisible or direction-changing Unicode characters;
+- instructions aimed at an AI reviewer;
+- edits to the security header or the pinned three.js script.
+
+If you need one of these for a good reason, open an issue first and explain it.
+
 ### What gets closed
 - Joke, offensive or off-topic content.
 - Changes to the license, credits, trademark files or CI.
